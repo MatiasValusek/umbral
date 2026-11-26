@@ -1,6 +1,6 @@
 import { Clone, TransformControls, useGLTF } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Box3, Vector3, type Group, type Mesh, type Object3D } from 'three'
 import { useEstado, type Colocando, type Objeto } from '../estado'
 import { porId, PROPIO } from './catalogo'
@@ -49,7 +49,9 @@ function Fantasma({ c }: { c: Colocando }) {
   )
 }
 
-function Colocado({ o, registrar }: { o: Objeto; registrar: (id: string, g: Object3D | null) => void }) {
+function Colocado({ o, seleccionado }: { o: Objeto; seleccionado: boolean }) {
+  // setState como ref: estable y no re-renderiza si el objeto no cambió
+  const [grupo, setGrupo] = useState<Group | null>(null)
   const click = (e: ThreeEvent<MouseEvent>) => {
     const s = useEstado.getState()
     if (s.modo !== 'edicion' || s.colocando || e.delta > 5) return
@@ -57,21 +59,18 @@ function Colocado({ o, registrar }: { o: Objeto; registrar: (id: string, g: Obje
     s.set({ seleccionado: o.id })
   }
   return (
-    <group
-      ref={(g) => registrar(o.id, g)}
-      position={o.pos}
-      rotation={[0, o.rotY, 0]}
-      scale={o.escala}
-      onClick={click}
-    >
-      <Suspense fallback={null}>
-        <Forma tipo={o.tipo} url={o.url} />
-      </Suspense>
-    </group>
+    <>
+      <group ref={setGrupo} position={o.pos} rotation={[0, o.rotY, 0]} scale={o.escala} onClick={click}>
+        <Suspense fallback={null}>
+          <Forma tipo={o.tipo} url={o.url} />
+        </Suspense>
+      </group>
+      {seleccionado && grupo && <Seleccion objeto={grupo} />}
+    </>
   )
 }
 
-function Seleccion({ objeto, children }: { objeto: Object3D; children?: ReactNode }) {
+function Seleccion({ objeto }: { objeto: Object3D }) {
   const { seleccionado, herramienta, actualizar } = useEstado()
   const guardar = () => {
     if (!seleccionado) return
@@ -104,37 +103,24 @@ function Seleccion({ objeto, children }: { objeto: Object3D; children?: ReactNod
         }}
         onMouseUp={guardar}
       />
-      {children}
     </>
   )
 }
 
 export default function Objetos() {
   const { objetos, colocando, seleccionado, modo } = useEstado()
-  const refs = useRef(new Map<string, Object3D>())
-  const [, refrescar] = useState(0)
-
-  const registrar = (id: string, g: Object3D | null) => {
-    const antes = refs.current.get(id)
-    if (g) refs.current.set(id, g)
-    else refs.current.delete(id)
-    if (id === seleccionado && antes !== g) refrescar((n) => n + 1)
-  }
 
   // Salir de Edición limpia selección y colocación
   useEffect(() => {
     if (modo !== 'edicion') useEstado.getState().set({ seleccionado: null, colocando: null })
   }, [modo])
 
-  const objSel = seleccionado ? refs.current.get(seleccionado) : undefined
-
   return (
     <>
       {objetos.map((o) => (
-        <Colocado key={o.id} o={o} registrar={registrar} />
+        <Colocado key={o.id} o={o} seleccionado={modo === 'edicion' && o.id === seleccionado} />
       ))}
       {modo === 'edicion' && colocando && <Fantasma c={colocando} />}
-      {modo === 'edicion' && objSel && <Seleccion objeto={objSel} />}
     </>
   )
 }

@@ -25,7 +25,7 @@ export default function Iluminacion() {
   }, [hora, orientacion, exposicion, c.sol])
 
   // De día el cielo ilumina más; al amanecer/atardecer baja la luz ambiente
-  const ambiente = c.ambiente * exposicion * (0.45 + 0.55 * smooth(0, 20, sol.elevacion))
+  const ambiente = c.ambiente * exposicion * (0.65 + 0.35 * smooth(0, 20, sol.elevacion))
   const fondo = cielo === 'nublado' ? '#c9cfd3' : '#dfe7ec'
   const enRender = modo === 'render'
 

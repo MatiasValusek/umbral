@@ -21,8 +21,8 @@ export const CIELOS: Record<
 > = {
   despejado: { nombre: 'Despejado', hdri: 'rooitou_park_1k.hdr', turbidez: 4, rayleigh: 1, sol: 1, ambiente: 0.55 },
   nublado: { nombre: 'Nublado', hdri: 'forest_slope_1k.hdr', turbidez: 20, rayleigh: 4, sol: 0.25, ambiente: 1.1 },
-  atardecer: { nombre: 'Atardecer', hdri: 'venice_sunset_1k.hdr', turbidez: 8, rayleigh: 2.5, sol: 1, ambiente: 0.5, horaSugerida: 19.25 },
-  amanecer: { nombre: 'Amanecer', hdri: 'kiara_1_dawn_1k.hdr', turbidez: 6, rayleigh: 2, sol: 1, ambiente: 0.5, horaSugerida: 6.75 },
+  atardecer: { nombre: 'Atardecer', hdri: 'venice_sunset_1k.hdr', turbidez: 8, rayleigh: 2.5, sol: 1.9, ambiente: 0.75, horaSugerida: 19.25 },
+  amanecer: { nombre: 'Amanecer', hdri: 'kiara_1_dawn_1k.hdr', turbidez: 6, rayleigh: 2, sol: 1.8, ambiente: 0.75, horaSugerida: 6.75 },
 }
 
 export const FORMATOS: Record<FormatoId, { nombre: string; detalle: string; ancho: number; alto: number }> = {

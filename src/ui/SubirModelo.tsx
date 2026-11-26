@@ -5,7 +5,10 @@ import type { Informe, Paso } from '../modelo/optimizar'
 import { limpiarHistorial } from '../proyecto/documento'
 
 const FORMATOS = '.glb,.fbx,.obj,.dae'
-const mb = (b: number) => (b / 1024 / 1024).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' MB'
+const mb = (b: number) =>
+  b < 1024 * 1024
+    ? Math.max(1, Math.round(b / 1024)).toLocaleString('es-AR') + ' KB'
+    : (b / 1024 / 1024).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' MB'
 const miles = (n: number) => n.toLocaleString('es-AR')
 
 // Abre el selector de archivos desde otros componentes (menú Proyecto)

@@ -175,7 +175,12 @@ export async function optimizar(
   progreso('comprimir')
   await respirar()
   await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }), prune())
-  const glb = await io.writeBinary(doc)
+  let glb: Uint8Array = await io.writeBinary(doc)
+  // Un .glb que ya venía optimizado puede no achicarse: en ese caso se usa el original
+  if (ext === '.glb' && glb.byteLength >= crudo.byteLength) {
+    glb = crudo
+    avisos.push('El .glb ya venía optimizado: se usa tal cual.')
+  }
 
   progreso('fin')
   const root = doc.getRoot()

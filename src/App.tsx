@@ -27,6 +27,10 @@ export default function App() {
   const radio = useEstado((s) => s.radioEscena)
   const propio = modelo.tipo === 'propio'
 
+  useEffect(() => {
+    document.title = propio ? `${tituloModelo(modelo)} · Umbral` : 'Casa Jardín — Recorrido 3D · Umbral'
+  }, [modelo, propio])
+
   // Modelo propio guardado en el navegador: se recupera al abrir la página
   useEffect(() => {
     const m = useEstado.getState().modelo

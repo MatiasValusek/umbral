@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { useEstado } from '../estado'
+import { tituloModelo, useEstado } from '../estado'
+import { elegirModelo } from './SubirModelo'
 import type { Punto } from '../data/puntos'
 import { PARES } from '../data/galeria'
 import Comparador from './Comparador'
@@ -16,6 +17,8 @@ type Vista = { tipo: 'comparador'; par?: string } | { tipo: 'galeria' } | null
 
 export default function Overlay({ puntos, activo, onSelect, modos }: Props) {
   const modo = useEstado((s) => s.modo)
+  const modelo = useEstado((s) => s.modelo)
+  const propio = modelo.tipo === 'propio'
   const actual = puntos.find((p) => p.id === activo)
   const par = PARES.find((p) => p.punto === activo)
   const [vista, setVista] = useState<Vista>(null)
@@ -25,16 +28,23 @@ export default function Overlay({ puntos, activo, onSelect, modos }: Props) {
       <div className="overlay">
         <div className="barra">
           <header className="marca">
-            <span className="marca__eyebrow">Proyecto de paisajismo</span>
-            <h1 className="marca__titulo">Casa Jardín</h1>
+            <span className="marca__eyebrow">{propio ? 'Tu modelo' : 'Proyecto de paisajismo'}</span>
+            <h1 className="marca__titulo">{tituloModelo(modelo)}</h1>
           </header>
           {modos}
           <nav className={'acciones' + (modo !== 'vista' ? ' acciones--ocultas' : '')} aria-label="Imágenes del proyecto">
-            <button className="accion" onClick={() => setVista({ tipo: 'comparador' })}>
-              Antes / Después
-            </button>
-            <button className="accion" onClick={() => setVista({ tipo: 'galeria' })}>
-              Renders
+            {!propio && (
+              <>
+                <button className="accion" onClick={() => setVista({ tipo: 'comparador' })}>
+                  Antes / Después
+                </button>
+                <button className="accion" onClick={() => setVista({ tipo: 'galeria' })}>
+                  Renders
+                </button>
+              </>
+            )}
+            <button className="accion accion--fuerte" onClick={elegirModelo}>
+              Subí tu modelo
             </button>
           </nav>
         </div>

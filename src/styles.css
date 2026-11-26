@@ -757,3 +757,87 @@ kbd {
   padding: 6px 4px;
   cursor: pointer;
 }
+
+/* ---------- Subir modelo propio ---------- */
+.accion--fuerte { background: var(--acento); color: #fff; border-color: var(--acento); }
+.accion--fuerte:hover { filter: brightness(1.08); }
+.proyecto__menu hr { border: 0; border-top: 1px solid rgba(31, 36, 32, 0.1); margin: 4px 8px; }
+
+.soltar {
+  position: fixed;
+  inset: 12px;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--acento);
+  border-radius: 18px;
+  background: rgba(244, 241, 234, 0.82);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.soltar div { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.soltar strong { font: 400 32px var(--serif); }
+.soltar span { color: var(--tinta-suave); }
+
+.dialogo {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20, 24, 20, 0.35);
+}
+.dialogo__caja {
+  width: min(440px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: #fbfaf6;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(20, 24, 20, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: entrar 0.25s ease both;
+}
+.dialogo__caja h2 { font: 400 26px/1.1 var(--serif); overflow-wrap: anywhere; }
+.dialogo__sub { color: var(--tinta-suave); font-size: 14px; margin-top: -8px; overflow-wrap: anywhere; }
+.dialogo__nota { font-size: 13px; color: var(--tinta-suave); line-height: 1.45; }
+.dialogo__error { font-size: 14px; color: #9b2c1f; line-height: 1.45; }
+.dialogo__acciones { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+.dialogo__acciones .renderizar { padding: 12px 22px; }
+
+.pasos { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.paso { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--tinta-suave); }
+.paso small { color: var(--tinta-suave); }
+.paso--activo, .paso--listo { color: var(--tinta); }
+.paso__marca {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid rgba(31, 36, 32, 0.2);
+}
+.paso--activo .paso__marca { border-color: var(--acento); border-top-color: transparent; animation: girar 0.8s linear infinite; }
+.paso--listo .paso__marca { background: var(--acento); border-color: var(--acento); }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.informe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.informe div { background: rgba(31, 36, 32, 0.04); border-radius: 10px; padding: 10px 12px; }
+.informe dt { font-size: 12px; color: var(--tinta-suave); }
+.informe dd { margin: 2px 0 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+
+.unidad { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.unidad span { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.unidad small { color: var(--tinta-suave); font-size: 12px; }
+.unidad select {
+  font: 500 15px var(--sans);
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(31, 36, 32, 0.2);
+  background: #fff;
+}
+@media (prefers-reduced-motion: reduce) { .paso--activo .paso__marca { animation: none; } }

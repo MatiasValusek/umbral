@@ -8,8 +8,9 @@ import {
   rehacer,
   useHistorial,
 } from '../proyecto/documento'
+import { slugModelo, useEstado } from '../estado'
+import { elegirModelo, volverAlEjemplo } from './SubirModelo'
 
-const MODELO = 'casa-jardin'
 
 const escribiendo = (t: EventTarget | null) =>
   t instanceof HTMLElement &&
@@ -27,6 +28,7 @@ function Icono({ d }: { d: string }) {
 
 /** Deshacer / rehacer y menú Proyecto (guardar, abrir, empezar de cero) */
 export default function BarraProyecto() {
+  const propio = useEstado((s) => s.modelo.tipo === 'propio')
   const puedeDeshacer = useHistorial((h) => h.pasado.length > 0)
   const puedeRehacer = useHistorial((h) => h.futuro.length > 0)
   const [menu, setMenu] = useState(false)
@@ -75,12 +77,13 @@ export default function BarraProyecto() {
   }, [menu])
 
   function guardar() {
-    const { texto, omitidos } = aJSON(MODELO)
+    const modelo = slugModelo(useEstado.getState().modelo)
+    const { texto, omitidos } = aJSON(modelo)
     const blob = new Blob([texto], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `escena-${MODELO}.json`
+    a.download = `escena-${modelo}.json`
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -97,9 +100,16 @@ export default function BarraProyecto() {
     if (!f) return
     setMenu(false)
     try {
-      const doc = deJSON(await f.text())
+      const texto = await f.text()
+      const doc = deJSON(texto)
       reemplazar(doc)
-      avisar(`Escena “${f.name}” abierta.`, true)
+      const deOtro = JSON.parse(texto).modelo !== slugModelo(useEstado.getState().modelo)
+      avisar(
+        deOtro
+          ? `Escena “${f.name}” abierta, pero era de otro modelo: los materiales pueden no coincidir.`
+          : `Escena “${f.name}” abierta.`,
+        true,
+      )
     } catch (err) {
       avisar(err instanceof Error ? err.message : 'No se pudo abrir el archivo.')
     }
@@ -134,7 +144,29 @@ export default function BarraProyecto() {
             <button role="menuitem" onClick={deCero}>
               Empezar de cero
             </button>
-            <p>Se guarda un archivo escena.json con objetos, materiales, luz y render. El modelo 3D no se incluye.</p>
+            <hr />
+            <button
+              role="menuitem"
+              onClick={() => {
+                setMenu(false)
+                elegirModelo()
+              }}
+            >
+              Cargar mi modelo 3D…
+            </button>
+            {propio && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setMenu(false)
+                  volverAlEjemplo()
+                  avisar('Volviste al modelo de ejemplo (Casa Jardín).')
+                }}
+              >
+                Volver al modelo de ejemplo
+              </button>
+            )}
+            <p>La escena (escena.json) guarda objetos, materiales, luz y render; el modelo 3D va aparte. También podés soltar un .glb, .fbx, .obj o .dae sobre la ventana.</p>
           </div>
         )}
         <input

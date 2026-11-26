@@ -61,6 +61,32 @@ export type Colocando = { tipo: string; nombre: string; url?: string }
 
 const nuevoId = () => Math.random().toString(36).slice(2, 9)
 
+export type Unidad = 'm' | 'cm' | 'mm' | 'in' | 'ft'
+export const UNIDADES: Record<Unidad, { nombre: string; factor: number }> = {
+  m: { nombre: 'Metros', factor: 1 },
+  cm: { nombre: 'Centímetros', factor: 0.01 },
+  mm: { nombre: 'Milímetros', factor: 0.001 },
+  in: { nombre: 'Pulgadas', factor: 0.0254 },
+  ft: { nombre: 'Pies', factor: 0.3048 },
+}
+
+export type ModeloInfo =
+  | { tipo: 'ejemplo' }
+  | { tipo: 'propio'; nombre: string; unidad: Unidad; bytes: number; triangulos: number }
+
+/** Nombre del modelo para mostrar y para nombres de archivo */
+export const tituloModelo = (m: ModeloInfo) => (m.tipo === 'propio' ? m.nombre : 'Casa Jardín')
+export const slugModelo = (m: ModeloInfo) =>
+  tituloModelo(m)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'modelo'
+
+/** Pedido de encuadre de cámara (lo atiende App) */
+export type Encuadre = { position: [number, number, number]; target: [number, number, number]; n: number }
+
 export type Capturador = (ancho: number, alto: number, archivo: Archivo) => Promise<Blob | null>
 
 type Estado = {
@@ -77,6 +103,11 @@ type Estado = {
   archivo: Archivo
   renderizando: boolean
   capturar: Capturador | null
+  // Modelo
+  modelo: ModeloInfo
+  modeloUrl: string | null // blob del modelo propio (no se guarda: se lee de IndexedDB al iniciar)
+  encuadre: Encuadre | null
+  radioEscena: number // mitad del tamaño de la escena en metros (sombras, niebla)
   // Edición
   objetos: Objeto[]
   seleccionado: string | null
@@ -112,6 +143,10 @@ export const useEstado = create<Estado>()(
   archivo: 'png',
   renderizando: false,
   capturar: null,
+  modelo: { tipo: 'ejemplo' },
+  modeloUrl: null,
+  encuadre: null,
+  radioEscena: 28,
   objetos: [],
   seleccionado: null,
   colocando: null,
@@ -155,6 +190,7 @@ export const useEstado = create<Estado>()(
     name: 'umbral-escena',
     version: 1,
     partialize: (s) => ({
+      modelo: s.modelo,
       objetos: s.objetos.filter((o) => o.tipo !== 'propio'),
       materiales: s.materiales,
       cielo: s.cielo,

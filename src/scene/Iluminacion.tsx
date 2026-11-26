@@ -12,7 +12,7 @@ const smooth = (a: number, b: number, x: number) => {
 
 // Sol + cielo + luz ambiente (HDRI) controlados desde el estado global.
 export default function Iluminacion() {
-  const { cielo, hora, orientacion, exposicion, sombrasSuaves, modo } = useEstado()
+  const { cielo, hora, orientacion, exposicion, sombrasSuaves, modo, radioEscena: r } = useEstado()
   const c = CIELOS[cielo]
 
   const sol = useMemo(() => {
@@ -20,9 +20,9 @@ export default function Iluminacion() {
     const alto = smooth(0, 30, elevacion)
     const color = CALIDO.clone().lerp(NEUTRO, alto)
     const intensidad = (0.35 + 2.6 * smooth(-2, 25, elevacion)) * c.sol * exposicion
-    const pos = dir.map((v) => v * 60) as [number, number, number]
+    const pos = dir.map((v) => v * Math.max(60, r * 2.2)) as [number, number, number]
     return { pos, color, intensidad, elevacion }
-  }, [hora, orientacion, exposicion, c.sol])
+  }, [hora, orientacion, exposicion, c.sol, r])
 
   // De día el cielo ilumina más; al amanecer/atardecer baja la luz ambiente
   const ambiente = c.ambiente * exposicion * (0.65 + 0.35 * smooth(0, 20, sol.elevacion))
@@ -32,7 +32,7 @@ export default function Iluminacion() {
   return (
     <>
       <color attach="background" args={[fondo]} />
-      <fog attach="fog" args={[fondo, 60, 160]} />
+      <fog attach="fog" args={[fondo, Math.max(60, r * 2.5), Math.max(160, r * 6)]} />
       <Sky
         distance={450}
         sunPosition={sol.pos}
@@ -48,18 +48,18 @@ export default function Iluminacion() {
       />
       <hemisphereLight args={['#f4f1ea', '#4b5d3a', 0.25 * exposicion]} />
       <directionalLight
-        key={enRender ? 'render' : 'vista'} // el tamaño del mapa de sombras solo se aplica al crear la luz
+        key={`${enRender ? 'render' : 'vista'}-${r}`} // el tamaño del mapa de sombras solo se aplica al crear la luz
         castShadow
         position={sol.pos}
         intensity={sol.intensidad}
         color={sol.color}
         shadow-mapSize={enRender ? [4096, 4096] : [2048, 2048]}
-        shadow-camera-left={-28}
-        shadow-camera-right={28}
-        shadow-camera-top={28}
-        shadow-camera-bottom={-28}
+        shadow-camera-left={-r}
+        shadow-camera-right={r}
+        shadow-camera-top={r}
+        shadow-camera-bottom={-r}
         shadow-camera-near={1}
-        shadow-camera-far={140}
+        shadow-camera-far={Math.max(140, r * 5)}
         shadow-bias={-0.0003}
         shadow-normalBias={0.02}
       />

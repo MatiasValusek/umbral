@@ -1,8 +1,10 @@
 import { useProgress } from '@react-three/drei'
 import { useEffect, useState } from 'react'
+import { tituloModelo, useEstado } from '../estado'
 
 export default function Loader() {
   const { active, progress } = useProgress()
+  const titulo = useEstado((s) => tituloModelo(s.modelo))
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export default function Loader() {
 
   return (
     <div className={'loader' + (active ? '' : ' loader--fuera')}>
-      <span className="loader__titulo">Casa Jardín</span>
+      <span className="loader__titulo">{titulo}</span>
       <div className="loader__barra">
         <div style={{ width: `${progress}%` }} />
       </div>

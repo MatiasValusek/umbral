@@ -5,6 +5,7 @@ import {
   FORMATOS,
   formatoHora,
   posicionSol,
+  slugModelo,
   useEstado,
   type Archivo,
   type CieloId,
@@ -59,7 +60,7 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
     try {
       const blob = await e.capturar(f.ancho, f.alto, e.archivo)
       if (!blob) throw new Error('vacío')
-      const nombre = `umbral-casa-jardin-${e.formato}-${fechaArchivo()}.${e.archivo}`
+      const nombre = `umbral-${slugModelo(e.modelo)}-${e.formato}-${fechaArchivo()}.${e.archivo}`
       descargar(blob, nombre)
       if (ultimo) URL.revokeObjectURL(ultimo.url)
       setUltimo({ url: URL.createObjectURL(blob), nombre })

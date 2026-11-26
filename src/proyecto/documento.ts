@@ -119,6 +119,13 @@ export function rehacer() {
   return true
 }
 
+/** Borra el historial (al cambiar de modelo: los pasos anteriores eran de otro modelo) */
+export function limpiarHistorial() {
+  useHistorial.setState({ pasado: [], futuro: [] })
+  ultimo = documentoActual()
+  ultimoCambio = 0
+}
+
 /** Reemplaza el documento entero (abrir archivo, empezar de cero) como un paso que se puede deshacer */
 export function reemplazar(d: Documento) {
   const h = useHistorial.getState()

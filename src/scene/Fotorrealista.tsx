@@ -1,9 +1,51 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import { Group, Matrix4, Mesh, type InstancedMesh, type Scene, type Texture } from 'three'
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  Matrix4,
+  Mesh,
+  type InstancedMesh,
+  type Scene,
+  type Texture,
+} from 'three'
+import { MeshoptSimplifier } from 'meshoptimizer'
 import { WebGLPathTracer } from 'three-gpu-pathtracer'
 import { GenerateMeshBVHWorker } from 'three-mesh-bvh/worker'
 import { useEstado } from '../estado'
+
+// Triángulos máximos que pueden sumar las instancias (plantas repetidas) al convertirlas para el path tracer
+const MAX_TRIS_INSTANCIAS = 400_000
+
+const triangulos = (g: BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3
+
+// Versión simplificada de una geometría (solo para el path tracer; se cachea)
+const simplificadas = new Map<string, BufferGeometry>()
+function simplificar(geo: BufferGeometry, ratio: number): BufferGeometry {
+  if (ratio >= 0.95 || !MeshoptSimplifier.supported) return geo
+  const clave = `${geo.uuid}-${ratio.toFixed(3)}`
+  const hecha = simplificadas.get(clave)
+  if (hecha) return hecha
+  const p = geo.attributes.position
+  const pos = new Float32Array(p.count * 3)
+  for (let i = 0; i < p.count; i++) {
+    pos[i * 3] = p.getX(i)
+    pos[i * 3 + 1] = p.getY(i)
+    pos[i * 3 + 2] = p.getZ(i)
+  }
+  const idx = geo.index ? Uint32Array.from(geo.index.array as ArrayLike<number>) : Uint32Array.from({ length: p.count }, (_, i) => i)
+  const objetivo = Math.max(36, Math.floor((idx.length * ratio) / 3) * 3)
+  const [nuevo] = MeshoptSimplifier.simplify(idx, pos, 3, objetivo, 0.08, ['Prune'])
+  const g = new BufferGeometry()
+  for (const [nombre, attr] of Object.entries(geo.attributes)) g.setAttribute(nombre, attr)
+  g.setIndex(new BufferAttribute(nuevo, 1))
+  simplificadas.set(clave, g)
+  return g
+}
+
+// La cámara puede moverse una fracción ínfima al terminar de frenar: eso no debe reiniciar la imagen
+const parecidas = (a: Matrix4, b: Matrix4) => a.elements.every((v, i) => Math.abs(v - b.elements[i]) < 1e-5)
 
 // Nombres de objetos que el path tracer no entiende o no debe ver
 const OCULTAR = ['cielo', 'sombras-contacto']
@@ -29,10 +71,14 @@ function prepararEscena(scene: Scene) {
       deshacer.push(() => (o.visible = true))
     }
   })
+  // Si las instancias suman demasiados triángulos, se simplifican (las plantas no necesitan tanto detalle)
+  const total = instancias.reduce((t, im) => t + triangulos(im.geometry) * im.count, 0)
+  const ratio = Math.max(0.03, Math.min(1, MAX_TRIS_INSTANCIAS / Math.max(1, total)))
   for (const im of instancias) {
+    const geo = simplificar(im.geometry, ratio)
     for (let i = 0; i < im.count; i++) {
       im.getMatrixAt(i, m)
-      const copia = new Mesh(im.geometry, im.material)
+      const copia = new Mesh(geo, im.material)
       copia.matrixAutoUpdate = false
       copia.matrix.multiplyMatrices(im.matrixWorld, m)
       copia.matrixWorld.copy(copia.matrix)
@@ -122,6 +168,8 @@ export default function Fotorrealista() {
       // esperar un par de cuadros para que React aplique luz/materiales/objetos nuevos
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       if (cancelado) return
+      await MeshoptSimplifier.ready
+      if (cancelado) return
       restaurar?.()
       restaurar = prepararEscena(scene)
       try {
@@ -177,7 +225,10 @@ export default function Fotorrealista() {
           pt.fadeDuration = 0
           pt.dynamicLowRes = false
           pt.renderScale = 1
-          pt.tiles.set(4, 4)
+          // Mosaicos según el tamaño final: ~250 mil píxeles por cuadro
+          const px = gl.domElement.width * gl.domElement.height
+          const t = Math.min(8, Math.max(2, Math.ceil(Math.sqrt(px / 250_000))))
+          pt.tiles.set(t, t)
           pt.updateCamera()
           const mirar = () => {
             const s = useEstado.getState()
@@ -196,7 +247,8 @@ export default function Fotorrealista() {
     })
   }, [set])
 
-  useFrame(() => {
+  const lentos = useRef(0)
+  useFrame((_, delta) => {
     const pt = tracer.current
     if (!pt || !listo.current) {
       gl.render(scene, camera) // mientras se prepara, se ve la imagen en tiempo real
@@ -204,12 +256,19 @@ export default function Fotorrealista() {
     }
     // Si la cámara se movió, se reinicia la acumulación
     camera.updateMatrixWorld()
-    if (!ultimaCam.current.equals(camera.matrixWorld) || !ultimaProj.current.equals(camera.projectionMatrix)) {
+    if (!parecidas(ultimaCam.current, camera.matrixWorld) || !parecidas(ultimaProj.current, camera.projectionMatrix)) {
       ultimaCam.current.copy(camera.matrixWorld)
       ultimaProj.current.copy(camera.projectionMatrix)
       pt.updateCamera()
     }
     pt.renderSample()
+    // Si la compu va lenta, se reparte el trabajo en más mosaicos para que la página siga respondiendo
+    if (delta > 0.15) {
+      if (++lentos.current > 3 && pt.tiles.x < 8) {
+        pt.tiles.addScalar(1)
+        lentos.current = 0
+      }
+    } else lentos.current = 0
     const ahora = performance.now()
     if (ahora - ultimoInforme.current > 250) {
       ultimoInforme.current = ahora

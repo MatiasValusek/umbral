@@ -20,6 +20,36 @@ const MAX_TRIS_INSTANCIAS = 400_000
 
 const triangulos = (g: BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3
 
+// El path tracer no entiende atributos cuantizados (KHR_mesh_quantization: enteros normalizados) ni
+// intercalados: se convierten a Float32 comunes en una copia de la geometría (cacheada).
+const ATRIBUTOS = ['position', 'normal', 'uv', 'uv1', 'tangent', 'color']
+const decuantizadas = new Map<string, BufferGeometry>()
+function decuantizar(geo: BufferGeometry): BufferGeometry {
+  const necesita = ATRIBUTOS.some((n) => {
+    const a = geo.getAttribute(n)
+    return a && (a.normalized || !(a.array instanceof Float32Array) || 'isInterleavedBufferAttribute' in a)
+  })
+  if (!necesita) return geo
+  const hecha = decuantizadas.get(geo.uuid)
+  if (hecha) return hecha
+  const g = new BufferGeometry()
+  g.setIndex(geo.index)
+  for (const [nombre, a] of Object.entries(geo.attributes)) {
+    if (!ATRIBUTOS.includes(nombre)) continue
+    const out = new Float32Array(a.count * a.itemSize)
+    for (let i = 0; i < a.count; i++) {
+      out[i * a.itemSize] = a.getX(i)
+      if (a.itemSize > 1) out[i * a.itemSize + 1] = a.getY(i)
+      if (a.itemSize > 2) out[i * a.itemSize + 2] = a.getZ(i)
+      if (a.itemSize > 3) out[i * a.itemSize + 3] = a.getW(i)
+    }
+    g.setAttribute(nombre, new BufferAttribute(out, a.itemSize))
+  }
+  for (const grupo of geo.groups) g.addGroup(grupo.start, grupo.count, grupo.materialIndex)
+  decuantizadas.set(geo.uuid, g)
+  return g
+}
+
 // Versión simplificada de una geometría (solo para el path tracer; se cachea)
 const simplificadas = new Map<string, BufferGeometry>()
 function simplificar(geo: BufferGeometry, ratio: number): BufferGeometry {
@@ -66,6 +96,15 @@ function prepararEscena(scene: Scene) {
   const instancias: InstancedMesh[] = []
   scene.traverse((o) => {
     if ((o as InstancedMesh).isInstancedMesh && o.visible) instancias.push(o as InstancedMesh)
+    else if ((o as Mesh).isMesh) {
+      const malla = o as Mesh
+      const original = malla.geometry
+      const nueva = decuantizar(original)
+      if (nueva !== original) {
+        malla.geometry = nueva
+        deshacer.push(() => (malla.geometry = original))
+      }
+    }
     if (OCULTAR.includes(o.name) && o.visible) {
       o.visible = false
       deshacer.push(() => (o.visible = true))
@@ -75,7 +114,7 @@ function prepararEscena(scene: Scene) {
   const total = instancias.reduce((t, im) => t + triangulos(im.geometry) * im.count, 0)
   const ratio = Math.max(0.03, Math.min(1, MAX_TRIS_INSTANCIAS / Math.max(1, total)))
   for (const im of instancias) {
-    const geo = simplificar(im.geometry, ratio)
+    const geo = simplificar(decuantizar(im.geometry), ratio)
     for (let i = 0; i < im.count; i++) {
       im.getMatrixAt(i, m)
       const copia = new Mesh(geo, im.material)

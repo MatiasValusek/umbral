@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Group, Matrix4, Mesh, type InstancedMesh, type Scene, type Texture } from 'three'
 import { WebGLPathTracer } from 'three-gpu-pathtracer'
+import { GenerateMeshBVHWorker } from 'three-mesh-bvh/worker'
 import { useEstado } from '../estado'
 
 // Nombres de objetos que el path tracer no entiende o no debe ver
@@ -86,8 +87,17 @@ export default function Fotorrealista() {
     pt.fadeDuration = 250
     pt.dynamicLowRes = true
     pt.lowResScale = 0.25
+    // El árbol de aceleración (BVH) se arma en otro hilo para no congelar la página
+    let worker: GenerateMeshBVHWorker | null = null
+    try {
+      worker = new GenerateMeshBVHWorker()
+      pt.setBVHWorker(worker)
+    } catch {
+      worker = null
+    }
     tracer.current = pt
     return () => {
+      worker?.dispose()
       pt.dispose()
       tracer.current = null
       listo.current = false
@@ -110,9 +120,15 @@ export default function Fotorrealista() {
       if (cancelado) return
       restaurar?.()
       restaurar = prepararEscena(scene)
-      await pt.setSceneAsync(scene, camera, {
-        onProgress: (p) => set({ foto: { fase: 'preparando', progreso: p, muestras: 0 } }),
-      })
+      try {
+        await pt.setSceneAsync(scene, camera, {
+          onProgress: (p) => set({ foto: { fase: 'preparando', progreso: p, muestras: 0 } }),
+        })
+      } catch {
+        // sin worker disponible: se arma en el hilo principal (la página se frena unos segundos)
+        if (cancelado) return
+        pt.setScene(scene, camera)
+      }
       if (cancelado) return
       listo.current = true
       set({ foto: { fase: 'listo', progreso: 1, muestras: 0 } })

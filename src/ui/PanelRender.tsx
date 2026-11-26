@@ -224,7 +224,7 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
               ))}
             </div>
             <p className="render__nota">
-              Más muestras = menos granulado, pero tarda más (sobre todo en 4K). Podés cortar antes y guardar lo que haya.
+              Más muestras = menos granulado, pero tarda más. En una notebook común, una foto HD en Borrador tarda unos 30 s; 4K en Alta puede llevar más de media hora. Podés cortar antes y guardar lo que haya. La primera vez el motor tarda en arrancar.
             </p>
           </section>
         )}

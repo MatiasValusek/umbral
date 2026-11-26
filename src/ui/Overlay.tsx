@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { useEstado } from '../estado'
 import type { Punto } from '../data/puntos'
 import { PARES } from '../data/galeria'
 import Comparador from './Comparador'
@@ -8,11 +9,13 @@ type Props = {
   puntos: Punto[]
   activo: string
   onSelect: (p: Punto) => void
+  modos?: ReactNode
 }
 
 type Vista = { tipo: 'comparador'; par?: string } | { tipo: 'galeria' } | null
 
-export default function Overlay({ puntos, activo, onSelect }: Props) {
+export default function Overlay({ puntos, activo, onSelect, modos }: Props) {
+  const modo = useEstado((s) => s.modo)
   const actual = puntos.find((p) => p.id === activo)
   const par = PARES.find((p) => p.punto === activo)
   const [vista, setVista] = useState<Vista>(null)
@@ -25,7 +28,8 @@ export default function Overlay({ puntos, activo, onSelect }: Props) {
             <span className="marca__eyebrow">Proyecto de paisajismo</span>
             <h1 className="marca__titulo">Casa Jardín</h1>
           </header>
-          <nav className="acciones" aria-label="Imágenes del proyecto">
+          {modos}
+          <nav className={'acciones' + (modo === 'render' ? ' acciones--ocultas' : '')} aria-label="Imágenes del proyecto">
             <button className="accion" onClick={() => setVista({ tipo: 'comparador' })}>
               Antes / Después
             </button>
@@ -35,6 +39,17 @@ export default function Overlay({ puntos, activo, onSelect }: Props) {
           </nav>
         </div>
 
+        {modo === 'edicion' && (
+          <section className="panel panel--aviso">
+            <h2>Modo Edición</h2>
+            <p>
+              Próximamente: agregar árboles, personas y mobiliario, y cambiar materiales con un click. Mientras tanto
+              podés preparar la imagen en <strong>Render</strong>.
+            </p>
+          </section>
+        )}
+
+        {modo === 'vista' && (
         <section className="panel">
           {actual && (
             <div className="ficha" key={actual.id}>
@@ -60,6 +75,7 @@ export default function Overlay({ puntos, activo, onSelect }: Props) {
             ))}
           </nav>
         </section>
+        )}
 
         <p className="ayuda">Arrastrá para girar · Rueda o pellizco para acercar</p>
       </div>

@@ -28,6 +28,7 @@ canvas { touch-action: none; }
   justify-content: space-between;
 }
 .overlay > * { pointer-events: auto; }
+.overlay { z-index: 1; }
 
 .marca { align-self: flex-start; }
 .marca__eyebrow {
@@ -324,4 +325,178 @@ canvas { touch-action: none; }
   .barra { flex-direction: column; }
   .accion { padding: 8px 13px; font-size: 12px; }
   .grilla { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* ---------- Modos: Vista · Edición · Render ---------- */
+.modos {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--papel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(31, 36, 32, 0.08);
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(31, 36, 32, 0.1);
+}
+.modos__item {
+  font: 500 13px var(--sans);
+  color: var(--tinta);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 16px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.modos__item:hover { background: rgba(79, 107, 58, 0.12); }
+.modos__item--activo, .modos__item--activo:hover { background: var(--acento); color: #fff; }
+.modos__item:focus-visible, .chip:focus-visible, .formato:focus-visible, .renderizar:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+.acciones--ocultas { visibility: hidden; }
+
+.panel--aviso h2 { font-family: var(--serif); font-weight: 400; font-size: 24px; }
+.panel--aviso p { color: var(--tinta-suave); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+
+/* ---------- Panel de render ---------- */
+.render {
+  position: fixed;
+  top: clamp(16px, 3vw, 36px);
+  right: clamp(16px, 3vw, 36px);
+  bottom: clamp(16px, 3vw, 36px);
+  width: 320px;
+  overflow-y: auto;
+  background: var(--papel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(31, 36, 32, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: entrar 0.35s ease both;
+  z-index: 2;
+}
+.render__titulo { font-family: var(--serif); font-weight: 400; font-size: 24px; }
+.render__grupo { display: flex; flex-direction: column; gap: 10px; }
+.render__grupo h3 { font: 600 12px var(--sans); color: var(--tinta-suave); }
+.render__nota { font-size: 12px; color: var(--tinta-suave); }
+.render__error { font-size: 13px; color: #9b2c1f; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 500 13px var(--sans);
+  color: var(--tinta);
+  background: transparent;
+  border: 1px solid rgba(31, 36, 32, 0.14);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.chip:hover { border-color: var(--acento); }
+.chip--activo, .chip--activo:hover { background: var(--acento); border-color: var(--acento); color: #fff; }
+
+.deslizador { display: flex; flex-direction: column; gap: 6px; }
+.deslizador__fila { display: flex; justify-content: space-between; align-items: baseline; }
+.deslizador output { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.deslizador input { width: 100%; accent-color: var(--acento); height: 22px; }
+
+.interruptores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.interruptor { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; min-height: 28px; }
+.interruptor input { accent-color: var(--acento); width: 16px; height: 16px; }
+
+.formatos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.formato {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font: 400 11px var(--sans);
+  color: var(--tinta-suave);
+  text-align: left;
+  background: transparent;
+  border: 1px solid rgba(31, 36, 32, 0.14);
+  border-radius: 9px;
+  padding: 9px 11px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.formato strong { font: 600 14px var(--sans); color: var(--tinta); }
+.formato:hover { border-color: var(--acento); }
+.formato--activo { border-color: var(--acento); background: rgba(79, 107, 58, 0.1); }
+.chips--archivo { margin-top: 2px; }
+
+.renderizar {
+  font: 600 15px var(--sans);
+  color: #fff;
+  background: var(--acento);
+  border: 0;
+  border-radius: 10px;
+  padding: 14px;
+  min-height: 48px;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.renderizar:hover { filter: brightness(1.08); }
+.renderizar:disabled { opacity: 0.6; cursor: progress; }
+
+.render__ultimo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--acento);
+  text-decoration: none;
+}
+.render__ultimo img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  background: rgba(31, 36, 32, 0.06);
+  border-radius: 8px;
+}
+
+/* Marco del formato: oscurece lo que queda afuera de la imagen */
+.marco {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 100vmax rgba(20, 24, 20, 0.38);
+  outline: 1px solid rgba(255, 255, 255, 0.7);
+  z-index: 0;
+}
+
+.renderizando {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #f4f1ea;
+  font-family: var(--serif);
+  font-size: 22px;
+}
+.renderizando span { animation: latir 1.2s ease-in-out infinite alternate; }
+@keyframes latir { from { opacity: 0.45; } to { opacity: 1; } }
+
+@media (max-width: 640px) {
+  .modos { align-self: flex-start; }
+  .render {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: 52vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .render, .renderizando span { animation: none; }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useEstado, type Herramienta } from '../estado'
 import { CATALOGO, PROPIO, porId, type Categoria } from '../objetos/catalogo'
 import { alturaEn } from '../objetos/Superficie'
+import { EditorMaterial, ListaMateriales } from './PanelMateriales'
 
 const CATEGORIAS: Categoria[] = ['Vegetación', 'Personas', 'Mobiliario']
 const MAX_MB = 50
@@ -43,7 +44,7 @@ export default function PanelEdicion() {
       if (escribiendo(ev.target)) return
       const s = useEstado.getState()
       const k = ev.key.toLowerCase()
-      if (k === 'escape') return s.set({ colocando: null, seleccionado: null })
+      if (k === 'escape') return s.set({ colocando: null, seleccionado: null, materialSel: null })
       if (!s.seleccionado) return
       if (k === 'g') s.set({ herramienta: 'mover' })
       else if (k === 'r') s.set({ herramienta: 'rotar' })
@@ -71,8 +72,24 @@ export default function PanelEdicion() {
 
   return (
     <>
-      <aside className="biblioteca" aria-label="Biblioteca de objetos">
-        <h2 className="render__titulo">Objetos</h2>
+      <aside className="biblioteca" aria-label="Biblioteca">
+        <div className="pestanas" role="tablist" aria-label="Qué editar">
+          {(['objetos', 'materiales'] as const).map((p) => (
+            <button
+              key={p}
+              role="tab"
+              aria-selected={e.pestana === p}
+              className={'pestana' + (e.pestana === p ? ' pestana--activa' : '')}
+              onClick={() => e.set({ pestana: p, colocando: null, seleccionado: null })}
+            >
+              {p === 'objetos' ? 'Objetos' : 'Materiales'}
+            </button>
+          ))}
+        </div>
+        {e.pestana === 'materiales' ? (
+          <ListaMateriales />
+        ) : (
+        <>
         <p className="render__nota">
           {e.colocando
             ? `Hacé click en la escena para colocar “${e.colocando.nombre}”. Shift + click coloca varios. Esc cancela.`
@@ -120,7 +137,11 @@ export default function PanelEdicion() {
             {aviso && <strong className="render__error"> {aviso}</strong>}
           </p>
         </section>
+        </>
+        )}
       </aside>
+
+      {e.pestana === 'materiales' && e.materialSel && <EditorMaterial />}
 
       {sel && (
         <aside className="propiedades" aria-label="Objeto seleccionado">

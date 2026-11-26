@@ -45,6 +45,18 @@ export type Objeto = {
   url?: string // solo para .glb propios (blob, no sobrevive a recargar la página)
 }
 
+export type Pestana = 'objetos' | 'materiales'
+
+/** Cambios sobre un material del modelo (se aplican encima del .glb, que nunca se modifica) */
+export type AjusteMaterial = {
+  color?: string
+  rugosidad?: number
+  metalicidad?: number
+  textura?: string | null // id de TEXTURAS; null = quitar textura
+  escala?: number // metros por repetición
+  rotacion?: number // grados
+}
+
 export type Colocando = { tipo: string; nombre: string; url?: string }
 
 const nuevoId = () => Math.random().toString(36).slice(2, 9)
@@ -70,6 +82,12 @@ type Estado = {
   seleccionado: string | null
   colocando: Colocando | null
   herramienta: Herramienta
+  pestana: Pestana
+  materialSel: string | null
+  listaMateriales: { nombre: string; color: string }[]
+  materiales: Record<string, AjusteMaterial>
+  ajustarMaterial: (nombre: string, parcial: AjusteMaterial) => void
+  restaurarMaterial: (nombre: string) => void
   agregar: (c: Colocando, pos: [number, number, number], rotY?: number) => string
   actualizar: (id: string, parcial: Partial<Objeto>) => void
   borrar: (id: string) => void
@@ -98,6 +116,17 @@ export const useEstado = create<Estado>()(
   seleccionado: null,
   colocando: null,
   herramienta: 'mover',
+  pestana: 'objetos',
+  materialSel: null,
+  listaMateriales: [],
+  materiales: {},
+  ajustarMaterial: (nombre, parcial) =>
+    set((s) => ({ materiales: { ...s.materiales, [nombre]: { ...s.materiales[nombre], ...parcial } } })),
+  restaurarMaterial: (nombre) =>
+    set((s) => {
+      const { [nombre]: _, ...resto } = s.materiales
+      return { materiales: resto }
+    }),
   agregar: (c, pos, rotY = 0) => {
     const id = nuevoId()
     set((s) => ({ objetos: [...s.objetos, { id, ...c, pos, rotY, escala: 1 }] }))
@@ -127,6 +156,7 @@ export const useEstado = create<Estado>()(
     version: 1,
     partialize: (s) => ({
       objetos: s.objetos.filter((o) => o.tipo !== 'propio'),
+      materiales: s.materiales,
       cielo: s.cielo,
       hora: s.hora,
       orientacion: s.orientacion,

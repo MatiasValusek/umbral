@@ -589,3 +589,82 @@ kbd {
   .propiedades { top: auto; left: 12px; right: 12px; bottom: 12px; width: auto; z-index: 3; }
   .items { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ---------- Materiales ---------- */
+.pestanas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(31, 36, 32, 0.06);
+  border-radius: 10px;
+}
+.pestana {
+  font: 600 14px var(--sans);
+  color: var(--tinta-suave);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.pestana--activa { background: #fff; color: var(--tinta); box-shadow: 0 1px 4px rgba(31, 36, 32, 0.12); }
+.pestana:focus-visible, .material:focus-visible, .textura:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.materiales { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.material {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 13px var(--sans);
+  color: var(--tinta);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.material:hover { background: rgba(31, 36, 32, 0.05); }
+.material--activo, .material--activo:hover { border-color: var(--acento); background: rgba(79, 107, 58, 0.1); }
+.material__muestra {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(31, 36, 32, 0.15);
+}
+.material__nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.material__marca { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--acento); }
+
+.propiedades--material { bottom: clamp(16px, 3vw, 36px); overflow-y: auto; }
+.texturas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.textura {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 500 11px/1.2 var(--sans);
+  color: var(--tinta);
+  text-align: center;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  padding: 3px;
+  cursor: pointer;
+}
+.textura:hover { border-color: rgba(79, 107, 58, 0.4); }
+.textura--activa, .textura--activa:hover { border-color: var(--acento); }
+.textura__muestra { width: 100%; aspect-ratio: 1; border-radius: 6px; object-fit: cover; display: block; }
+.textura__muestra--original { box-shadow: inset 0 0 0 1px rgba(31, 36, 32, 0.15); }
+
+.color { display: flex; justify-content: space-between; align-items: center; }
+.color h3 { font: 600 12px var(--sans); color: var(--tinta-suave); }
+.color input { width: 56px; height: 32px; border: 1px solid rgba(31, 36, 32, 0.15); border-radius: 8px; padding: 2px; background: #fff; cursor: pointer; }
+.chip:disabled { opacity: 0.45; cursor: default; }
+
+@media (max-width: 640px) {
+  .propiedades--material { max-height: 55vh; }
+}

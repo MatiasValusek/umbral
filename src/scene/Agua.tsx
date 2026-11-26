@@ -16,6 +16,7 @@ export default function Agua({
       <planeGeometry args={size} />
       <meshPhysicalMaterial
         ref={mat}
+        name="Agua"
         color="#3fc1d0"
         roughness={0.05}
         metalness={0}

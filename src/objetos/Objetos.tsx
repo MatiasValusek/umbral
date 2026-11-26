@@ -54,7 +54,7 @@ function Colocado({ o, seleccionado }: { o: Objeto; seleccionado: boolean }) {
   const [grupo, setGrupo] = useState<Group | null>(null)
   const click = (e: ThreeEvent<MouseEvent>) => {
     const s = useEstado.getState()
-    if (s.modo !== 'edicion' || s.colocando || e.delta > 5) return
+    if (s.modo !== 'edicion' || s.pestana !== 'objetos' || s.colocando || e.delta > 5) return
     e.stopPropagation()
     s.set({ seleccionado: o.id })
   }

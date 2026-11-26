@@ -1,6 +1,6 @@
 import type { ThreeEvent } from '@react-three/fiber'
 import { useRef, type ReactNode } from 'react'
-import { Raycaster, Vector3, type Group } from 'three'
+import { Raycaster, Vector3, type Group, type Material, type Mesh } from 'three'
 import { useEstado } from '../estado'
 
 // Estado compartido sin re-renders: dónde está el cursor sobre el terreno/modelo
@@ -26,8 +26,8 @@ export default function Superficie({ children }: { children: ReactNode }) {
   const ref = useRef<Group>(null)
 
   const mover = (e: ThreeEvent<PointerEvent>) => {
-    const { modo, colocando } = useEstado.getState()
-    if (modo !== 'edicion' || !colocando) return
+    const { modo, colocando, pestana } = useEstado.getState()
+    if (modo !== 'edicion' || !colocando || pestana !== 'objetos') return
     cursor.punto.copy(e.point)
     cursor.visible = true
   }
@@ -36,6 +36,13 @@ export default function Superficie({ children }: { children: ReactNode }) {
     const s = useEstado.getState()
     if (s.modo !== 'edicion' || e.delta > 5) return
     e.stopPropagation()
+    if (s.pestana === 'materiales') {
+      const malla = e.object as Mesh
+      const mats = Array.isArray(malla.material) ? malla.material : [malla.material]
+      const mat: Material | undefined = mats[e.face?.materialIndex ?? 0] ?? mats[0]
+      s.set({ materialSel: mat?.name || null })
+      return
+    }
     if (s.colocando) {
       const id = s.agregar(s.colocando, [e.point.x, e.point.y, e.point.z], Math.random() * Math.PI * 2)
       // Shift mantiene la herramienta para seguir colocando del mismo tipo

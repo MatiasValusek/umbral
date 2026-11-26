@@ -37,7 +37,7 @@ export default function BarraProyecto() {
   const avisar = (texto: string, conDeshacer = false) => setAviso({ texto, deshacer: conDeshacer })
   useEffect(() => {
     if (!aviso) return
-    const t = setTimeout(() => setAviso(null), 5000)
+    const t = setTimeout(() => setAviso(null), 8000)
     return () => clearTimeout(t)
   }, [aviso])
 

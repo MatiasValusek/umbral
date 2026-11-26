@@ -18,9 +18,11 @@ export default function App() {
   const [activo, setActivo] = useState<string>(VISTA_GENERAL.id)
   const modo = useEstado((s) => s.modo)
 
-  // ?debug en la URL expone la cámara en la consola: __cam.setLookAt(x,y,z, tx,ty,tz, true)
+  // ?debug en la URL expone en la consola la cámara (__cam.current.setLookAt(x,y,z, tx,ty,tz, true))
+  // y el estado global (__umbral.getState())
   if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
     ;(window as unknown as { __cam: unknown }).__cam = controls
+    ;(window as unknown as { __umbral: unknown }).__umbral = useEstado
   }
 
   const irA = (p: Punto) => {

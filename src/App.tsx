@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { CameraControls } from '@react-three/drei'
 import Experience from './scene/Experience'
@@ -7,6 +7,8 @@ import Overlay from './ui/Overlay'
 import PanelRender from './ui/PanelRender'
 import PanelEdicion from './ui/PanelEdicion'
 import Modos from './ui/Modos'
+import BarraProyecto from './ui/BarraProyecto'
+import { iniciarHistorial } from './proyecto/documento'
 import Loader from './ui/Loader'
 import { PUNTOS, VISTA_GENERAL, type Punto } from './data/puntos'
 import { useEstado } from './estado'
@@ -18,6 +20,9 @@ export default function App() {
   const controls = useRef<CameraControls>(null)
   const [activo, setActivo] = useState<string>(VISTA_GENERAL.id)
   const modo = useEstado((s) => s.modo)
+
+  // Historial de deshacer/rehacer (se arma después de recuperar la escena guardada en el navegador)
+  useEffect(() => iniciarHistorial(), [])
 
   // ?debug en la URL expone en la consola la cámara (__cam.current.setLookAt(x,y,z, tx,ty,tz, true))
   // y el estado global (__umbral.getState())
@@ -57,7 +62,12 @@ export default function App() {
           smoothTime={0.6}
         />
       </Canvas>
-      <Overlay puntos={PUNTOS} activo={activo} onSelect={irA} modos={<Modos />} />
+      <Overlay puntos={PUNTOS} activo={activo} onSelect={irA} modos={
+          <div className="centro">
+            <Modos />
+            {modo !== 'vista' && <BarraProyecto />}
+          </div>
+        } />
       {modo === 'edicion' && <PanelEdicion />}
       {modo === 'render' && <PanelRender puntos={PUNTOS} activo={activo} onSelect={irA} />}
       <Loader />

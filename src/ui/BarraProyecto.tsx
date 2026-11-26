@@ -1,0 +1,169 @@
+import { useEffect, useRef, useState } from 'react'
+import {
+  aJSON,
+  deJSON,
+  deshacer,
+  DOCUMENTO_VACIO,
+  reemplazar,
+  rehacer,
+  useHistorial,
+} from '../proyecto/documento'
+
+const MODELO = 'casa-jardin'
+
+const escribiendo = (t: EventTarget | null) =>
+  t instanceof HTMLElement &&
+  ((t.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'color'].includes((t as HTMLInputElement).type)) ||
+    t.tagName === 'TEXTAREA' ||
+    t.isContentEditable)
+
+function Icono({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={d} />
+    </svg>
+  )
+}
+
+/** Deshacer / rehacer y menú Proyecto (guardar, abrir, empezar de cero) */
+export default function BarraProyecto() {
+  const puedeDeshacer = useHistorial((h) => h.pasado.length > 0)
+  const puedeRehacer = useHistorial((h) => h.futuro.length > 0)
+  const [menu, setMenu] = useState(false)
+  const [aviso, setAviso] = useState<{ texto: string; deshacer?: boolean } | null>(null)
+  const archivo = useRef<HTMLInputElement>(null)
+  const caja = useRef<HTMLDivElement>(null)
+
+  const avisar = (texto: string, conDeshacer = false) => setAviso({ texto, deshacer: conDeshacer })
+  useEffect(() => {
+    if (!aviso) return
+    const t = setTimeout(() => setAviso(null), 5000)
+    return () => clearTimeout(t)
+  }, [aviso])
+
+  // Atajos globales
+  useEffect(() => {
+    const tecla = (ev: KeyboardEvent) => {
+      if (escribiendo(ev.target) || !(ev.ctrlKey || ev.metaKey)) return
+      const k = ev.key.toLowerCase()
+      if (k === 'z' && !ev.shiftKey) {
+        ev.preventDefault()
+        deshacer()
+      } else if (k === 'y' || (k === 'z' && ev.shiftKey)) {
+        ev.preventDefault()
+        rehacer()
+      } else if (k === 's') {
+        ev.preventDefault()
+        guardar()
+      } else if (k === 'o') {
+        ev.preventDefault()
+        archivo.current?.click()
+      }
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [])
+
+  // Cerrar el menú al hacer click afuera
+  useEffect(() => {
+    if (!menu) return
+    const fuera = (ev: PointerEvent) => {
+      if (!caja.current?.contains(ev.target as Node)) setMenu(false)
+    }
+    window.addEventListener('pointerdown', fuera)
+    return () => window.removeEventListener('pointerdown', fuera)
+  }, [menu])
+
+  function guardar() {
+    const { texto, omitidos } = aJSON(MODELO)
+    const blob = new Blob([texto], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `escena-${MODELO}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 2000)
+    setMenu(false)
+    avisar(
+      omitidos
+        ? `Escena guardada. ${omitidos} objeto${omitidos > 1 ? 's' : ''} .glb propio${omitidos > 1 ? 's' : ''} no se guarda${omitidos > 1 ? 'n' : ''} en el archivo.`
+        : 'Escena guardada.',
+    )
+  }
+
+  async function abrir(f: File | undefined) {
+    if (!f) return
+    setMenu(false)
+    try {
+      const doc = deJSON(await f.text())
+      reemplazar(doc)
+      avisar(`Escena “${f.name}” abierta.`, true)
+    } catch (err) {
+      avisar(err instanceof Error ? err.message : 'No se pudo abrir el archivo.')
+    }
+  }
+
+  function deCero() {
+    reemplazar(DOCUMENTO_VACIO)
+    setMenu(false)
+    avisar('Escena vacía: sin objetos ni cambios de materiales.', true)
+  }
+
+  return (
+    <>
+      <div className="proyecto" ref={caja}>
+        <button className="proyecto__boton" onClick={deshacer} disabled={!puedeDeshacer} aria-label="Deshacer" title="Deshacer (Ctrl+Z)">
+          <Icono d="M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+        </button>
+        <button className="proyecto__boton" onClick={rehacer} disabled={!puedeRehacer} aria-label="Rehacer" title="Rehacer (Ctrl+Y)">
+          <Icono d="M15 14l5-5-5-5 M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+        </button>
+        <button className="proyecto__boton proyecto__boton--texto" aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu((m) => !m)}>
+          Proyecto
+        </button>
+        {menu && (
+          <div className="proyecto__menu" role="menu">
+            <button role="menuitem" onClick={guardar}>
+              Guardar escena <kbd>Ctrl S</kbd>
+            </button>
+            <button role="menuitem" onClick={() => archivo.current?.click()}>
+              Abrir escena… <kbd>Ctrl O</kbd>
+            </button>
+            <button role="menuitem" onClick={deCero}>
+              Empezar de cero
+            </button>
+            <p>Se guarda un archivo escena.json con objetos, materiales, luz y render. El modelo 3D no se incluye.</p>
+          </div>
+        )}
+        <input
+          ref={archivo}
+          type="file"
+          accept=".json,application/json"
+          hidden
+          onChange={(ev) => {
+            abrir(ev.target.files?.[0])
+            ev.target.value = ''
+          }}
+        />
+      </div>
+
+      {aviso && (
+        <div className="aviso" role="status">
+          <span>{aviso.texto}</span>
+          {aviso.deshacer && (
+            <button
+              onClick={() => {
+                deshacer()
+                setAviso(null)
+              }}
+            >
+              Deshacer
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  )
+}

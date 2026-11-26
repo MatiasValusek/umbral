@@ -5,6 +5,7 @@ import Experience from './scene/Experience'
 import Capturador from './scene/Capturador'
 import Overlay from './ui/Overlay'
 import PanelRender from './ui/PanelRender'
+import PanelEdicion from './ui/PanelEdicion'
 import Modos from './ui/Modos'
 import Loader from './ui/Loader'
 import { PUNTOS, VISTA_GENERAL, type Punto } from './data/puntos'
@@ -48,6 +49,7 @@ export default function App() {
         )}
         <Capturador />
         <CameraControls
+          makeDefault
           ref={controls}
           minDistance={1}
           maxDistance={60}
@@ -56,6 +58,7 @@ export default function App() {
         />
       </Canvas>
       <Overlay puntos={PUNTOS} activo={activo} onSelect={irA} modos={<Modos />} />
+      {modo === 'edicion' && <PanelEdicion />}
       {modo === 'render' && <PanelRender puntos={PUNTOS} activo={activo} onSelect={irA} />}
       <Loader />
     </>

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export type Modo = 'vista' | 'edicion' | 'render'
 export type CieloId = 'despejado' | 'nublado' | 'atardecer' | 'amanecer'
@@ -32,6 +33,22 @@ export const FORMATOS: Record<FormatoId, { nombre: string; detalle: string; anch
   vertical: { nombre: '9:16', detalle: '1080 × 1920 · historias', ancho: 1080, alto: 1920 },
 }
 
+export type Herramienta = 'mover' | 'rotar' | 'escalar'
+
+export type Objeto = {
+  id: string
+  tipo: string // id del catálogo o 'propio'
+  nombre: string
+  pos: [number, number, number]
+  rotY: number // radianes
+  escala: number
+  url?: string // solo para .glb propios (blob, no sobrevive a recargar la página)
+}
+
+export type Colocando = { tipo: string; nombre: string; url?: string }
+
+const nuevoId = () => Math.random().toString(36).slice(2, 9)
+
 export type Capturador = (ancho: number, alto: number, archivo: Archivo) => Promise<Blob | null>
 
 type Estado = {
@@ -48,11 +65,22 @@ type Estado = {
   archivo: Archivo
   renderizando: boolean
   capturar: Capturador | null
+  // Edición
+  objetos: Objeto[]
+  seleccionado: string | null
+  colocando: Colocando | null
+  herramienta: Herramienta
+  agregar: (c: Colocando, pos: [number, number, number], rotY?: number) => string
+  actualizar: (id: string, parcial: Partial<Objeto>) => void
+  borrar: (id: string) => void
+  duplicar: (id: string) => void
   set: (parcial: Partial<Omit<Estado, 'set'>>) => void
   elegirCielo: (c: CieloId) => void
 }
 
-export const useEstado = create<Estado>((set) => ({
+export const useEstado = create<Estado>()(
+  persist(
+  (set, get) => ({
   modo: 'vista',
   cielo: 'despejado',
   hora: 15,
@@ -66,10 +94,53 @@ export const useEstado = create<Estado>((set) => ({
   archivo: 'png',
   renderizando: false,
   capturar: null,
+  objetos: [],
+  seleccionado: null,
+  colocando: null,
+  herramienta: 'mover',
+  agregar: (c, pos, rotY = 0) => {
+    const id = nuevoId()
+    set((s) => ({ objetos: [...s.objetos, { id, ...c, pos, rotY, escala: 1 }] }))
+    return id
+  },
+  actualizar: (id, parcial) =>
+    set((s) => ({ objetos: s.objetos.map((o) => (o.id === id ? { ...o, ...parcial } : o)) })),
+  borrar: (id) =>
+    set((s) => ({
+      objetos: s.objetos.filter((o) => o.id !== id),
+      seleccionado: s.seleccionado === id ? null : s.seleccionado,
+    })),
+  duplicar: (id) => {
+    const o = get().objetos.find((x) => x.id === id)
+    if (!o) return
+    const copia = { ...o, id: nuevoId(), pos: [o.pos[0] + 1, o.pos[1], o.pos[2] + 1] as [number, number, number] }
+    set((s) => ({ objetos: [...s.objetos, copia], seleccionado: copia.id }))
+  },
   set: (parcial) => set(parcial),
   elegirCielo: (c) =>
     set((s) => ({ cielo: c, hora: CIELOS[c].horaSugerida ?? (s.hora < 8 || s.hora > 18 ? 14 : s.hora) })),
-}))
+  }),
+  {
+    // Guardado automático en este navegador: objetos colocados y ajustes de luz/render.
+    // Los .glb propios no se guardan (viven en memoria hasta recargar).
+    name: 'umbral-escena',
+    version: 1,
+    partialize: (s) => ({
+      objetos: s.objetos.filter((o) => o.tipo !== 'propio'),
+      cielo: s.cielo,
+      hora: s.hora,
+      orientacion: s.orientacion,
+      exposicion: s.exposicion,
+      sombrasSuaves: s.sombrasSuaves,
+      oclusion: s.oclusion,
+      brillo: s.brillo,
+      vineta: s.vineta,
+      formato: s.formato,
+      archivo: s.archivo,
+    }),
+  },
+  ),
+)
 
 // Posición del sol para Buenos Aires (lat −34,6°) a fines de noviembre (declinación ≈ −21°).
 // Devuelve la dirección hacia el sol en coordenadas de la escena (norte = −Z rotado por `orientacion`)

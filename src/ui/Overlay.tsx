@@ -29,7 +29,7 @@ export default function Overlay({ puntos, activo, onSelect, modos }: Props) {
             <h1 className="marca__titulo">Casa Jardín</h1>
           </header>
           {modos}
-          <nav className={'acciones' + (modo === 'render' ? ' acciones--ocultas' : '')} aria-label="Imágenes del proyecto">
+          <nav className={'acciones' + (modo !== 'vista' ? ' acciones--ocultas' : '')} aria-label="Imágenes del proyecto">
             <button className="accion" onClick={() => setVista({ tipo: 'comparador' })}>
               Antes / Después
             </button>
@@ -38,16 +38,6 @@ export default function Overlay({ puntos, activo, onSelect, modos }: Props) {
             </button>
           </nav>
         </div>
-
-        {modo === 'edicion' && (
-          <section className="panel panel--aviso">
-            <h2>Modo Edición</h2>
-            <p>
-              Próximamente: agregar árboles, personas y mobiliario, y cambiar materiales con un click. Mientras tanto
-              podés preparar la imagen en <strong>Render</strong>.
-            </p>
-          </section>
-        )}
 
         {modo === 'vista' && (
         <section className="panel">

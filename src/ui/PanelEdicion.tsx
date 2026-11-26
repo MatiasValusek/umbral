@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEstado, type Herramienta } from '../estado'
 import { CATALOGO, PROPIO, porId, type Categoria } from '../objetos/catalogo'
+import { alturaEn } from '../objetos/Superficie'
 
 const CATEGORIAS: Categoria[] = ['Vegetación', 'Personas', 'Mobiliario']
 const MAX_MB = 50
@@ -18,6 +19,14 @@ const HERRAMIENTAS: { id: Herramienta; nombre: string; tecla: string }[] = [
   { id: 'rotar', nombre: 'Rotar', tecla: 'R' },
   { id: 'escalar', nombre: 'Escalar', tecla: 'S' },
 ]
+
+// Duplica al lado y lo apoya sobre lo que haya debajo
+function duplicarApoyado(id: string) {
+  const s = useEstado.getState()
+  s.duplicar(id)
+  const nuevo = useEstado.getState().objetos.find((o) => o.id === useEstado.getState().seleccionado)
+  if (nuevo) s.actualizar(nuevo.id, { pos: [nuevo.pos[0], alturaEn(nuevo.pos[0], nuevo.pos[2]), nuevo.pos[2]] })
+}
 
 const escribiendo = (t: EventTarget | null) =>
   t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
@@ -42,7 +51,7 @@ export default function PanelEdicion() {
       else if (k === 'delete' || k === 'backspace') s.borrar(s.seleccionado)
       else if (k === 'd' && (ev.ctrlKey || ev.metaKey)) {
         ev.preventDefault()
-        s.duplicar(s.seleccionado)
+        duplicarApoyado(s.seleccionado)
       }
     }
     window.addEventListener('keydown', tecla)
@@ -161,7 +170,7 @@ export default function PanelEdicion() {
             />
           </label>
           <div className="propiedades__acciones">
-            <button className="chip" onClick={() => e.duplicar(sel.id)}>
+            <button className="chip" onClick={() => duplicarApoyado(sel.id)}>
               Duplicar <kbd>Ctrl D</kbd>
             </button>
             <button className="chip chip--peligro" onClick={() => e.borrar(sel.id)}>

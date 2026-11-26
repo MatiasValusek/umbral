@@ -78,7 +78,10 @@ export default function Fotorrealista() {
   // Crear y destruir el path tracer
   useEffect(() => {
     const pt = new WebGLPathTracer(gl)
-    pt.tiles.set(2, 2)
+    // Vista previa liviana: media resolución y en mosaicos de 3×3 para no trabar la página.
+    // El render final usa resolución completa (ver esperarMuestras).
+    pt.tiles.set(3, 3)
+    pt.renderScale = 0.5
     pt.bounces = 6
     pt.transmissiveBounces = 8
     pt.filterGlossyFactor = 0.5
@@ -96,6 +99,7 @@ export default function Fotorrealista() {
       worker = null
     }
     tracer.current = pt
+    if (window.location.search.includes('debug')) (window as unknown as { __pt: unknown }).__pt = pt
     return () => {
       worker?.dispose()
       pt.dispose()
@@ -169,8 +173,11 @@ export default function Fotorrealista() {
           const pt = tracer.current
           if (!pt) return ok()
           const fade = pt.fadeDuration
+          const escala = pt.renderScale
           pt.fadeDuration = 0
           pt.dynamicLowRes = false
+          pt.renderScale = 1
+          pt.tiles.set(4, 4)
           pt.updateCamera()
           const mirar = () => {
             const s = useEstado.getState()
@@ -178,6 +185,9 @@ export default function Fotorrealista() {
             if ((listo.current && pt.samples >= n) || s.terminarYa) {
               pt.fadeDuration = fade
               pt.dynamicLowRes = true
+              pt.renderScale = escala
+              pt.tiles.set(3, 3)
+              pt.updateCamera()
               ok()
             } else requestAnimationFrame(mirar)
           }

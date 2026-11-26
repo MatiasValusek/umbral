@@ -5,8 +5,8 @@ import { useEstado } from '../estado'
 // Postprocesado del modo Render: oclusión ambiental, brillo suave, viñeta y tone mapping.
 // En modo Vista no se monta (más liviano para el celular).
 export default function Efectos() {
-  const { modo, oclusion, brillo, vineta } = useEstado()
-  if (modo !== 'render') return null
+  const { modo, motor, oclusion, brillo, vineta } = useEstado()
+  if (modo !== 'render' || motor === 'foto') return null
   // La key reconstruye la cadena de efectos al prender/apagar uno
   const key = `${+oclusion}${+brillo}${+vineta}`
   return (

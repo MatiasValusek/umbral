@@ -44,7 +44,7 @@ export default function Experience() {
 
       <AplicarMateriales key={clave} />
       <Objetos />
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.3} scale={60} blur={2.5} far={8} />
+      <ContactShadows name="sombras-contacto" position={[0, 0.01, 0]} opacity={0.3} scale={60} blur={2.5} far={8} />
     </>
   )
 }

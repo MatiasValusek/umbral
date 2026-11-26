@@ -87,6 +87,18 @@ export const slugModelo = (m: ModeloInfo) =>
 /** Pedido de encuadre de cámara (lo atiende App) */
 export type Encuadre = { position: [number, number, number]; target: [number, number, number]; n: number }
 
+export type Motor = 'tiempoReal' | 'foto'
+export type CalidadFoto = 'borrador' | 'buena' | 'alta'
+export const CALIDADES_FOTO: Record<CalidadFoto, { nombre: string; muestras: number }> = {
+  borrador: { nombre: 'Borrador', muestras: 64 },
+  buena: { nombre: 'Buena', muestras: 256 },
+  alta: { nombre: 'Alta', muestras: 1024 },
+}
+/** Estado del path tracer (no se guarda) */
+export type EstadoFoto = { fase: 'apagado' | 'preparando' | 'listo'; progreso: number; muestras: number }
+/** Espera a que el path tracer junte n muestras (lo registra el componente Fotorrealista) */
+export type EsperarMuestras = (n: number, progreso: (m: number) => void) => Promise<void>
+
 export type Capturador = (ancho: number, alto: number, archivo: Archivo) => Promise<Blob | null>
 
 type Estado = {
@@ -103,6 +115,12 @@ type Estado = {
   archivo: Archivo
   renderizando: boolean
   capturar: Capturador | null
+  motor: Motor
+  calidadFoto: CalidadFoto
+  foto: EstadoFoto
+  esperarMuestras: EsperarMuestras | null
+  terminarYa: boolean
+  muestrasRender: number // progreso del render en curso (modo Foto)
   // Modelo
   modelo: ModeloInfo
   modeloUrl: string | null // blob del modelo propio (no se guarda: se lee de IndexedDB al iniciar)
@@ -143,6 +161,12 @@ export const useEstado = create<Estado>()(
   archivo: 'png',
   renderizando: false,
   capturar: null,
+  motor: 'tiempoReal',
+  calidadFoto: 'buena',
+  foto: { fase: 'apagado', progreso: 0, muestras: 0 },
+  esperarMuestras: null,
+  terminarYa: false,
+  muestrasRender: 0,
   modelo: { tipo: 'ejemplo' },
   modeloUrl: null,
   encuadre: null,
@@ -203,6 +227,7 @@ export const useEstado = create<Estado>()(
       vineta: s.vineta,
       formato: s.formato,
       archivo: s.archivo,
+      calidadFoto: s.calidadFoto,
     }),
   },
   ),

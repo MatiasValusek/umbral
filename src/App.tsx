@@ -17,11 +17,14 @@ import { leerModelo } from './modelo/almacen'
 
 // El postprocesado solo se usa en modo Render: se descarga cuando hace falta
 const Efectos = lazy(() => import('./scene/Efectos'))
+// El path tracer (motor Foto) también se carga solo cuando se usa
+const Fotorrealista = lazy(() => import('./scene/Fotorrealista'))
 
 export default function App() {
   const controls = useRef<CameraControls>(null)
   const [activo, setActivo] = useState<string>(VISTA_GENERAL.id)
   const modo = useEstado((s) => s.modo)
+  const motor = useEstado((s) => s.motor)
   const modelo = useEstado((s) => s.modelo)
   const encuadre = useEstado((s) => s.encuadre)
   const radio = useEstado((s) => s.radioEscena)
@@ -96,7 +99,7 @@ export default function App() {
         </Suspense>
         {modo === 'render' && (
           <Suspense fallback={null}>
-            <Efectos />
+            {motor === 'foto' ? <Fotorrealista /> : <Efectos />}
           </Suspense>
         )}
         <Capturador />

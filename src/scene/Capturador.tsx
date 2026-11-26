@@ -1,7 +1,7 @@
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import type { PerspectiveCamera } from 'three'
-import { useEstado, type Archivo } from '../estado'
+import { CALIDADES_FOTO, useEstado, type Archivo } from '../estado'
 
 const esperarCuadros = (n: number) =>
   new Promise<void>((ok) => {
@@ -41,8 +41,18 @@ export default function Capturador() {
         setDpr(1)
         setSize(w, h)
         cam.updateProjectionMatrix()
-        // Unos cuadros para que se acomoden sombras, oclusión y postprocesado al nuevo tamaño
-        await esperarCuadros(6)
+        const e = useEstado.getState()
+        if (e.motor === 'foto' && e.esperarMuestras) {
+          // Motor Foto: juntar muestras de path tracing a la resolución final
+          e.set({ terminarYa: false, muestrasRender: 0 })
+          await esperarCuadros(2)
+          await e.esperarMuestras(CALIDADES_FOTO[e.calidadFoto].muestras, (m) =>
+            useEstado.getState().set({ muestrasRender: m }),
+          )
+        } else {
+          // Unos cuadros para que se acomoden sombras, oclusión y postprocesado al nuevo tamaño
+          await esperarCuadros(6)
+        }
         return await new Promise<Blob | null>((ok) =>
           gl.domElement.toBlob(ok, archivo === 'png' ? 'image/png' : 'image/jpeg', 0.93),
         )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Punto } from '../data/puntos'
 import {
+  CALIDADES_FOTO,
   CIELOS,
   FORMATOS,
   formatoHora,
@@ -8,6 +9,7 @@ import {
   slugModelo,
   useEstado,
   type Archivo,
+  type CalidadFoto,
   type CieloId,
   type FormatoId,
 } from '../estado'
@@ -77,6 +79,37 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
 
       <aside className="render" aria-label="Opciones de render">
         <h2 className="render__titulo">Render</h2>
+
+        <section className="render__grupo">
+          <h3>Motor</h3>
+          <div className="pestanas" role="tablist" aria-label="Motor de render">
+            <button
+              role="tab"
+              aria-selected={e.motor === 'tiempoReal'}
+              className={'pestana' + (e.motor === 'tiempoReal' ? ' pestana--activa' : '')}
+              onClick={() => e.set({ motor: 'tiempoReal' })}
+            >
+              Tiempo real
+            </button>
+            <button
+              role="tab"
+              aria-selected={e.motor === 'foto'}
+              className={'pestana' + (e.motor === 'foto' ? ' pestana--activa' : '')}
+              onClick={() => e.set({ motor: 'foto' })}
+            >
+              Foto
+            </button>
+          </div>
+          {e.motor === 'foto' && (
+            <p className="render__nota render__estado">
+              {e.foto.fase === 'preparando'
+                ? `Preparando la escena… ${Math.round(e.foto.progreso * 100)}%`
+                : e.foto.fase === 'listo'
+                  ? `Path tracing: ${e.foto.muestras} muestras. La imagen se afina sola mientras no muevas la cámara.`
+                  : 'Cargando el motor…'}
+            </p>
+          )}
+        </section>
 
         <section className="render__grupo">
           <h3>Cámara</h3>
@@ -157,6 +190,7 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
           </label>
         </section>
 
+        {e.motor === 'tiempoReal' ? (
         <section className="render__grupo">
           <h3>Calidad</h3>
           <div className="interruptores">
@@ -175,6 +209,25 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
             ))}
           </div>
         </section>
+        ) : (
+          <section className="render__grupo">
+            <h3>Calidad de la foto</h3>
+            <div className="chips">
+              {(Object.keys(CALIDADES_FOTO) as CalidadFoto[]).map((q) => (
+                <button
+                  key={q}
+                  className={'chip' + (e.calidadFoto === q ? ' chip--activo' : '')}
+                  onClick={() => e.set({ calidadFoto: q })}
+                >
+                  {CALIDADES_FOTO[q].nombre} · {CALIDADES_FOTO[q].muestras}
+                </button>
+              ))}
+            </div>
+            <p className="render__nota">
+              Más muestras = menos granulado, pero tarda más (sobre todo en 4K). Podés cortar antes y guardar lo que haya.
+            </p>
+          </section>
+        )}
 
         <section className="render__grupo">
           <h3>Formato</h3>
@@ -203,7 +256,11 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
           </div>
         </section>
 
-        <button className="renderizar" onClick={renderizar} disabled={!e.capturar || e.renderizando}>
+        <button
+          className="renderizar"
+          onClick={renderizar}
+          disabled={!e.capturar || e.renderizando || (e.motor === 'foto' && e.foto.fase !== 'listo')}
+        >
           {e.renderizando ? 'Renderizando…' : `Renderizar ${f.nombre}`}
         </button>
         {error && <p className="render__error">{error}</p>}
@@ -217,9 +274,24 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
 
       {e.renderizando && (
         <div className="renderizando" role="status">
-          <span>
-            Renderizando {f.nombre} · {f.ancho} × {f.alto}
-          </span>
+          <div className="renderizando__caja">
+            <span className="renderizando__titulo">
+              Renderizando {f.nombre} · {f.ancho} × {f.alto}
+            </span>
+            {e.motor === 'foto' && (
+              <>
+                <div className="renderizando__barra" aria-hidden>
+                  <div style={{ width: `${Math.min(100, (e.muestrasRender / CALIDADES_FOTO[e.calidadFoto].muestras) * 100)}%` }} />
+                </div>
+                <span className="renderizando__detalle">
+                  {e.muestrasRender} de {CALIDADES_FOTO[e.calidadFoto].muestras} muestras
+                </span>
+                <button className="chip" onClick={() => e.set({ terminarYa: true })}>
+                  Terminar ahora y guardar
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </>

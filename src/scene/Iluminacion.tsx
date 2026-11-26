@@ -33,14 +33,16 @@ export default function Iluminacion() {
     <>
       <color attach="background" args={[fondo]} />
       <fog attach="fog" args={[fondo, Math.max(60, r * 2.5), Math.max(160, r * 6)]} />
-      <Sky
-        distance={450}
-        sunPosition={sol.pos}
-        turbidity={c.turbidez}
-        rayleigh={c.rayleigh}
-        mieCoefficient={0.005}
-        mieDirectionalG={0.8}
-      />
+      <group name="cielo">
+        <Sky
+          distance={450}
+          sunPosition={sol.pos}
+          turbidity={c.turbidez}
+          rayleigh={c.rayleigh}
+          mieCoefficient={0.005}
+          mieDirectionalG={0.8}
+        />
+      </group>
       <Environment
         files={`hdri/${c.hdri}`}
         environmentIntensity={ambiente}

@@ -1,14 +1,14 @@
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { create } from 'zustand'
 
-// Proyecto de Supabase de Umbral (organización "Umbral").
+// Proyecto de Supabase de Umbral (cuenta valusekmatias@gmail.com, organización "Umbral", ref jqaxwohcxrnsyxpifwlt).
 // La clave publicable es pública a propósito: lo que protege los datos son las políticas RLS de la base.
 // Se pueden pisar con VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY (por ejemplo, para un proyecto de pruebas).
-const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL || ''
-const CLAVE_PUBLICABLE = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL || 'https://jqaxwohcxrnsyxpifwlt.supabase.co'
+const CLAVE_PUBLICABLE = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_DAv0VQ0Byc8IICC9oTbWgQ_IN4eI61h'
 
-/** Sin configuración no se muestra nada de la nube (la app sigue funcionando igual que antes) */
-export const nubeDisponible = !!(URL_SUPABASE && CLAVE_PUBLICABLE)
+/** Con VITE_SUPABASE_URL=off se apaga la nube (la app sigue funcionando igual que antes) */
+export const nubeDisponible = URL_SUPABASE.startsWith('https://') && !!CLAVE_PUBLICABLE
 
 export const supabase: SupabaseClient | null = nubeDisponible
   ? createClient(URL_SUPABASE, CLAVE_PUBLICABLE, { auth: { flowType: 'pkce', detectSessionInUrl: true } })

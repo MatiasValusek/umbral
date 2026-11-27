@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { create } from 'zustand'
 import { tituloModelo, useEstado } from '../estado'
 import { entrarConCodigo, mandarLink, useSesion } from '../nube/cliente'
@@ -283,8 +284,11 @@ function MisProyectos({ onAviso }: { onAviso: (t: string) => void }) {
 /** Ventanas de la nube (se montan una sola vez, en la barra de proyecto) */
 export default function Nube({ onAviso }: { onAviso: (t: string) => void }) {
   const ventana = useVentanaNube((s) => s.ventana)
-  if (ventana === 'entrar') return <Entrar onAviso={onAviso} />
-  if (ventana === 'guardarComo') return <GuardarComo onAviso={onAviso} />
-  if (ventana === 'proyectos') return <MisProyectos onAviso={onAviso} />
-  return null
+  // Van directo al body: la barra de proyecto tiene su propio apilado (desenfoque) y los paneles quedarían encima
+  const contenido =
+    ventana === 'entrar' ? <Entrar onAviso={onAviso} />
+    : ventana === 'guardarComo' ? <GuardarComo onAviso={onAviso} />
+    : ventana === 'proyectos' ? <MisProyectos onAviso={onAviso} />
+    : null
+  return contenido && createPortal(contenido, document.body)
 }

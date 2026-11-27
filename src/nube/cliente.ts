@@ -10,8 +10,9 @@ const CLAVE_PUBLICABLE = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_pu
 /** Con VITE_SUPABASE_URL=off se apaga la nube (la app sigue funcionando igual que antes) */
 export const nubeDisponible = URL_SUPABASE.startsWith('https://') && !!CLAVE_PUBLICABLE
 
+// implicit: el link del mail funciona aunque se abra en otro navegador o en el celular
 export const supabase: SupabaseClient | null = nubeDisponible
-  ? createClient(URL_SUPABASE, CLAVE_PUBLICABLE, { auth: { flowType: 'implicit', detectSessionInUrl: true } // implicit: el link del mail funciona aunque se abra en otro navegador o en el celular })
+  ? createClient(URL_SUPABASE, CLAVE_PUBLICABLE, { auth: { flowType: 'implicit', detectSessionInUrl: true } })
   : null
 
 export const BUCKET = 'proyectos'

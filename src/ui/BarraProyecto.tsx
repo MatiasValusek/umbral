@@ -198,6 +198,11 @@ export default function BarraProyecto() {
             <button role="menuitem" onClick={deCero}>
               Empezar de cero
             </button>
+            {nubeDisponible && (
+              <button role="menuitem" onClick={() => { setMenu(false); abrirVentanaNube('ejemplos') }}>
+                Ejemplos para probar…
+              </button>
+            )}
             <hr />
             <button
               role="menuitem"

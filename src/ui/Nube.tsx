@@ -5,12 +5,13 @@ import { tituloModelo, useEstado } from '../estado'
 import { entrarConCodigo, mandarLink, useSesion } from '../nube/cliente'
 import { abrirDeNube, borrarProyecto, guardarEnNube, listarProyectos, renombrarProyecto, type ProyectoNube } from '../nube/proyectos'
 import Modal from './Modal'
+import { abrirEjemplo, EJEMPLOS, miniaturaEjemplo } from '../nube/ejemplos'
 
-type Ventana = null | 'entrar' | 'proyectos' | 'guardarComo'
+type Ventana = null | 'entrar' | 'proyectos' | 'guardarComo' | 'ejemplos'
 export const useVentanaNube = create<{ ventana: Ventana; despues: Ventana }>(() => ({ ventana: null, despues: null }))
 /** Abre una ventana de la nube; si hace falta entrar primero, después de entrar sigue con la pedida */
 export function abrirVentanaNube(v: Exclude<Ventana, null>) {
-  if (v !== 'entrar' && !useSesion.getState().usuario) useVentanaNube.setState({ ventana: 'entrar', despues: v })
+  if (v !== 'entrar' && v !== 'ejemplos' && !useSesion.getState().usuario) useVentanaNube.setState({ ventana: 'entrar', despues: v })
   else useVentanaNube.setState({ ventana: v, despues: null })
 }
 const cerrar = () => useVentanaNube.setState({ ventana: null, despues: null })
@@ -227,6 +228,63 @@ function Tarjeta({ p, actual, onAbrir, onCambio }: { p: ProyectoNube; actual: bo
   )
 }
 
+/** Tarjetas de los proyectos de ejemplo (para cualquiera, con o sin cuenta) */
+function Ejemplos({ onAviso, ocupado, setOcupado }: { onAviso: (t: string) => void; ocupado: string; setOcupado: (t: string) => void }) {
+  const [error, setError] = useState('')
+  const abrir = async (i: number) => {
+    if (ocupado) return
+    setError('')
+    try {
+      await abrirEjemplo(EJEMPLOS[i], setOcupado)
+      const conCuenta = !!useSesion.getState().usuario
+      onAviso(
+        `Ejemplo “${EJEMPLOS[i].nombre}” abierto. ` +
+          (conCuenta ? 'Si lo cambiás, guardalo con Ctrl S y queda en tus proyectos.' : 'Entrá con tu mail para guardar tus cambios en la nube.'),
+      )
+      cerrar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo abrir el ejemplo.')
+    } finally {
+      setOcupado('')
+    }
+  }
+  return (
+    <>
+      {error && <p className="render__error">{error}</p>}
+      <ul className="tarjetas tarjetas--ejemplos">
+        {EJEMPLOS.map((e, i) => (
+          <li key={e.id} className="tarjeta">
+            <button className="tarjeta__imagen" onClick={() => abrir(i)} aria-label={`Abrir el ejemplo ${e.nombre}`}>
+              <img src={miniaturaEjemplo(e)} alt="" loading="lazy" />
+              <span className="tarjeta__sello">Ejemplo</span>
+            </button>
+            <div className="tarjeta__info">
+              <strong>{e.nombre}</strong>
+              <span>{e.descripcion}</span>
+              <div className="tarjeta__acciones">
+                <button className="chip chip--chico chip--activo" onClick={() => abrir(i)}>
+                  Abrir ejemplo
+                </button>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+function VentanaEjemplos({ onAviso }: { onAviso: (t: string) => void }) {
+  const [ocupado, setOcupado] = useState('')
+  return (
+    <Modal titulo="Ejemplos para probar" onClose={() => !ocupado && cerrar()} className="modal__caja--media">
+      <p className="nube__texto">Dos proyectos simples, livianos y listos para probar objetos, materiales, luz, render y video. Al abrir uno se reemplaza lo que tenés en pantalla.</p>
+      {ocupado && <p className="nube__texto nube__estado">{ocupado}</p>}
+      <Ejemplos onAviso={onAviso} ocupado={ocupado} setOcupado={setOcupado} />
+    </Modal>
+  )
+}
+
 function MisProyectos({ onAviso }: { onAviso: (t: string) => void }) {
   const usuario = useSesion((s) => s.usuario)
   const actual = useSesion((s) => s.actual)
@@ -263,7 +321,7 @@ function MisProyectos({ onAviso }: { onAviso: (t: string) => void }) {
       {error && <p className="render__error">{error}</p>}
       {abriendo && <p className="nube__texto nube__estado">{abriendo}</p>}
       {lista && lista.length === 0 && (
-        <p className="nube__vacio">Todavía no guardaste proyectos. Armá tu escena y tocá “Guardar en la nube”.</p>
+        <p className="nube__vacio">Todavía no guardaste proyectos. Abrí un ejemplo de abajo para probar, o armá tu escena y tocá “Guardar en la nube”.</p>
       )}
       {lista && lista.length > 0 && (
         <ul className="tarjetas">
@@ -277,6 +335,8 @@ function MisProyectos({ onAviso }: { onAviso: (t: string) => void }) {
           + Guardar la escena actual como proyecto nuevo
         </button>
       </div>
+      <h3 className="nube__subtitulo">Ejemplos para probar</h3>
+      <Ejemplos onAviso={onAviso} ocupado={abriendo} setOcupado={setAbriendo} />
     </Modal>
   )
 }
@@ -289,6 +349,7 @@ export default function Nube({ onAviso }: { onAviso: (t: string) => void }) {
     ventana === 'entrar' ? <Entrar onAviso={onAviso} />
     : ventana === 'guardarComo' ? <GuardarComo onAviso={onAviso} />
     : ventana === 'proyectos' ? <MisProyectos onAviso={onAviso} />
+    : ventana === 'ejemplos' ? <VentanaEjemplos onAviso={onAviso} />
     : null
   return contenido && createPortal(contenido, document.body)
 }

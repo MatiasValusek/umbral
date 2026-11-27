@@ -984,3 +984,18 @@ kbd {
 .tarjeta__info > span { font-size: 12px; color: var(--tinta-suave); }
 .tarjeta__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; }
 .chip--peligro, .chip--peligro:hover { background: #9b2c1f; border-color: #9b2c1f; color: #fff; }
+.nube__subtitulo { margin-top: 22px; font: 600 12px var(--sans); color: var(--tinta-suave); text-transform: uppercase; letter-spacing: 0.06em; }
+.tarjetas--ejemplos { max-height: none; margin-top: 10px; }
+.tarjeta__imagen { position: relative; }
+.tarjeta__sello {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font: 600 11px var(--sans);
+  color: #fff;
+  background: var(--acento);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.tarjeta__info > span { line-height: 1.4; }
+.modal__caja--media { max-height: calc(100vh - 32px); overflow-y: auto; }

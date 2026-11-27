@@ -3,6 +3,7 @@ import { UNIDADES, useEstado, VIDEO_INICIAL, type Unidad } from '../estado'
 import { borrarModelo, guardarModelo } from '../modelo/almacen'
 import type { Informe, Paso } from '../modelo/optimizar'
 import { limpiarHistorial } from '../proyecto/documento'
+import { useSesion } from '../nube/cliente'
 
 const FORMATOS = '.glb,.fbx,.obj,.dae'
 const mb = (b: number) =>
@@ -21,6 +22,7 @@ export async function volverAlEjemplo() {
   if (s.modeloUrl) URL.revokeObjectURL(s.modeloUrl)
   s.set({ modelo: { tipo: 'ejemplo' }, modeloUrl: null, objetos: [], materiales: {}, video: VIDEO_INICIAL, seleccionado: null, materialSel: null })
   limpiarHistorial()
+  useSesion.setState({ actual: null, modeloSubido: null })
   await borrarModelo().catch(() => {})
 }
 
@@ -132,6 +134,7 @@ export default function SubirModelo() {
       colocando: null,
     })
     limpiarHistorial()
+    useSesion.setState({ actual: null, modeloSubido: null }) // es otro modelo: se guarda como proyecto nuevo
   }
 
   const cambiarUnidad = (u: Unidad) => {

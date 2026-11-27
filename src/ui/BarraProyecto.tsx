@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   aJSON,
   deJSON,
@@ -10,6 +10,9 @@ import {
 } from '../proyecto/documento'
 import { slugModelo, useEstado } from '../estado'
 import { elegirModelo, volverAlEjemplo } from './SubirModelo'
+import { nubeDisponible, salir, useSesion } from '../nube/cliente'
+import { guardarEnNube } from '../nube/proyectos'
+import Nube, { abrirVentanaNube } from './Nube'
 
 
 const escribiendo = (t: EventTarget | null) =>
@@ -31,12 +34,16 @@ export default function BarraProyecto() {
   const propio = useEstado((s) => s.modelo.tipo === 'propio')
   const puedeDeshacer = useHistorial((h) => h.pasado.length > 0)
   const puedeRehacer = useHistorial((h) => h.futuro.length > 0)
+  const usuario = useSesion((s) => s.usuario)
+  const actual = useSesion((s) => s.actual)
+  const [guardandoNube, setGuardandoNube] = useState(false)
   const [menu, setMenu] = useState(false)
   const [aviso, setAviso] = useState<{ texto: string; deshacer?: boolean } | null>(null)
   const archivo = useRef<HTMLInputElement>(null)
   const caja = useRef<HTMLDivElement>(null)
 
   const avisar = (texto: string, conDeshacer = false) => setAviso({ texto, deshacer: conDeshacer })
+  const avisarNube = useCallback((texto: string) => setAviso({ texto }), [])
   useEffect(() => {
     if (!aviso) return
     const t = setTimeout(() => setAviso(null), 8000)
@@ -56,7 +63,8 @@ export default function BarraProyecto() {
         rehacer()
       } else if (k === 's') {
         ev.preventDefault()
-        guardar()
+        if (useSesion.getState().usuario) guardarNube()
+        else guardar()
       } else if (k === 'o') {
         ev.preventDefault()
         archivo.current?.click()
@@ -94,6 +102,21 @@ export default function BarraProyecto() {
         ? `Escena guardada. ${omitidos} objeto${omitidos > 1 ? 's' : ''} .glb propio${omitidos > 1 ? 's' : ''} no se guarda${omitidos > 1 ? 'n' : ''} en el archivo.`
         : 'Escena guardada.',
     )
+  }
+
+  /** Guarda en el proyecto de la nube abierto; si no hay ninguno, pregunta el nombre */
+  async function guardarNube() {
+    setMenu(false)
+    if (!useSesion.getState().actual) return abrirVentanaNube('guardarComo')
+    setGuardandoNube(true)
+    try {
+      const r = await guardarEnNube(undefined, (t) => avisar(t))
+      avisar(`Guardado en la nube: “${r.nombre}”.`)
+    } catch (err) {
+      avisar(err instanceof Error ? err.message : 'No se pudo guardar en la nube.')
+    } finally {
+      setGuardandoNube(false)
+    }
   }
 
   async function abrir(f: File | undefined) {
@@ -135,11 +158,42 @@ export default function BarraProyecto() {
         </button>
         {menu && (
           <div className="proyecto__menu" role="menu">
+            {nubeDisponible && (
+              <>
+                {usuario ? (
+                  <>
+                    <button role="menuitem" onClick={guardarNube} disabled={guardandoNube}>
+                      <span className="proyecto__item">
+                        {guardandoNube ? 'Guardando…' : 'Guardar en la nube'}
+                        {actual && <small>{actual.nombre}</small>}
+                      </span>
+                      <kbd>Ctrl S</kbd>
+                    </button>
+                    {actual && (
+                      <button role="menuitem" onClick={() => { setMenu(false); abrirVentanaNube('guardarComo') }}>
+                        Guardar como proyecto nuevo…
+                      </button>
+                    )}
+                    <button role="menuitem" onClick={() => { setMenu(false); abrirVentanaNube('proyectos') }}>
+                      Mis proyectos…
+                    </button>
+                  </>
+                ) : (
+                  <button role="menuitem" onClick={() => { setMenu(false); abrirVentanaNube('entrar') }}>
+                    <span className="proyecto__item">
+                      Entrar para guardar en la nube…
+                      <small>Tus proyectos en cualquier compu</small>
+                    </span>
+                  </button>
+                )}
+                <hr />
+              </>
+            )}
             <button role="menuitem" onClick={guardar}>
-              Guardar escena <kbd>Ctrl S</kbd>
+              {nubeDisponible ? 'Descargar escena.json' : 'Guardar escena'} {!usuario && <kbd>Ctrl S</kbd>}
             </button>
             <button role="menuitem" onClick={() => archivo.current?.click()}>
-              Abrir escena… <kbd>Ctrl O</kbd>
+              Abrir escena.json… <kbd>Ctrl O</kbd>
             </button>
             <button role="menuitem" onClick={deCero}>
               Empezar de cero
@@ -166,6 +220,23 @@ export default function BarraProyecto() {
                 Volver al modelo de ejemplo
               </button>
             )}
+            {usuario && (
+              <>
+                <hr />
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMenu(false)
+                    salir().then(() => avisar('Saliste de tu cuenta. Lo que está en pantalla sigue acá.'))
+                  }}
+                >
+                  <span className="proyecto__item">
+                    Salir
+                    <small>{usuario.email}</small>
+                  </span>
+                </button>
+              </>
+            )}
             <p>La escena (escena.json) guarda objetos, materiales, luz y render; el modelo 3D va aparte. También podés soltar un .glb, .fbx, .obj o .dae sobre la ventana.</p>
           </div>
         )}
@@ -180,6 +251,8 @@ export default function BarraProyecto() {
           }}
         />
       </div>
+
+      <Nube onAviso={avisarNube} />
 
       {aviso && (
         <div className="aviso" role="status">

@@ -999,3 +999,4 @@ kbd {
 }
 .tarjeta__info > span { line-height: 1.4; }
 .modal__caja--media { max-height: calc(100vh - 32px); overflow-y: auto; }
+.modal__caja--media .tarjetas { max-height: none; overflow: visible; }

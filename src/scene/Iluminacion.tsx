@@ -12,17 +12,17 @@ const smooth = (a: number, b: number, x: number) => {
 
 // Sol + cielo + luz ambiente (HDRI) controlados desde el estado global.
 export default function Iluminacion() {
-  const { cielo, hora, orientacion, exposicion, sombrasSuaves, modo, radioEscena: r } = useEstado()
+  const { cielo, hora, mes, latitud, orientacion, exposicion, sombrasSuaves, modo, radioEscena: r } = useEstado()
   const c = CIELOS[cielo]
 
   const sol = useMemo(() => {
-    const { dir, elevacion } = posicionSol(hora, orientacion)
+    const { dir, elevacion } = posicionSol(hora, orientacion, mes, latitud)
     const alto = smooth(0, 30, elevacion)
     const color = CALIDO.clone().lerp(NEUTRO, alto)
     const intensidad = (0.35 + 2.6 * smooth(-2, 25, elevacion)) * c.sol * exposicion
     const pos = dir.map((v) => v * Math.max(60, r * 2.2)) as [number, number, number]
     return { pos, color, intensidad, elevacion }
-  }, [hora, orientacion, exposicion, c.sol, r])
+  }, [hora, mes, latitud, orientacion, exposicion, c.sol, r])
 
   // De día el cielo ilumina más; al amanecer/atardecer baja la luz ambiente
   const ambiente = c.ambiente * exposicion * (0.65 + 0.35 * smooth(0, 20, sol.elevacion))

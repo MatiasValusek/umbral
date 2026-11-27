@@ -912,3 +912,15 @@ kbd {
 .renderizando__barra { width: min(320px, 70vw); height: 4px; background: rgba(31, 36, 32, 0.12); border-radius: 2px; overflow: hidden; }
 .renderizando__barra div { height: 100%; background: var(--acento); transition: width 0.3s; }
 .renderizando__detalle { font: 400 14px var(--sans); color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+.chip--chico { font-size: 12px; padding: 5px 10px; }
+.toma__editar {
+  flex: 1;
+  min-width: 0;
+  font: 500 13px var(--sans);
+  color: var(--tinta);
+  background: #fff;
+  border: 1px solid var(--acento);
+  border-radius: 6px;
+  padding: 5px 6px;
+}
+.toma__editar:focus { outline: none; box-shadow: 0 0 0 2px rgba(79, 107, 58, 0.25); }

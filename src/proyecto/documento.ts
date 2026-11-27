@@ -3,6 +3,8 @@ import {
   CIELOS,
   DURACION_VIDEO,
   FORMATOS,
+  LATITUD,
+  LATITUD_INICIAL,
   useEstado,
   VIDEO_INICIAL,
   type AjusteMaterial,
@@ -19,6 +21,8 @@ export type Documento = {
   materiales: Record<string, AjusteMaterial>
   cielo: keyof typeof CIELOS
   hora: number
+  mes: number
+  latitud: number
   orientacion: number
   exposicion: number
   sombrasSuaves: boolean
@@ -35,6 +39,8 @@ const CLAVES = [
   'materiales',
   'cielo',
   'hora',
+  'mes',
+  'latitud',
   'orientacion',
   'exposicion',
   'sombrasSuaves',
@@ -51,6 +57,8 @@ export const DOCUMENTO_VACIO: Documento = {
   materiales: {},
   cielo: 'despejado',
   hora: 15,
+  mes: 11,
+  latitud: LATITUD_INICIAL,
   orientacion: 0,
   exposicion: 1,
   sombrasSuaves: true,
@@ -213,6 +221,8 @@ export function deJSON(texto: string): Documento {
     materiales,
     cielo: typeof e.cielo === 'string' && e.cielo in CIELOS ? (e.cielo as Documento['cielo']) : v.cielo,
     hora: num(e.hora, v.hora, 6, 20.5),
+    mes: Math.round(num(e.mes, v.mes, 1, 12)),
+    latitud: num(e.latitud, v.latitud, LATITUD.min, LATITUD.max),
     orientacion: num(e.orientacion, v.orientacion, 0, 359),
     exposicion: num(e.exposicion, v.exposicion, 0.4, 1.8),
     sombrasSuaves: bool(e.sombrasSuaves, v.sombrasSuaves),
@@ -254,5 +264,6 @@ function leerVideo(v: unknown): AjustesVideo {
     giro: e.giro === 90 || e.giro === 180 ? e.giro : 360,
     duracion: num(e.duracion, d.duracion, DURACION_VIDEO.min, DURACION_VIDEO.max),
     fps: e.fps === 24 || e.fps === 60 ? e.fps : 30,
+    pausa: e.pausa === 1 || e.pausa === 2 || e.pausa === 3 ? e.pausa : 0,
   }
 }

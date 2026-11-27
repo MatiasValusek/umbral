@@ -77,15 +77,39 @@ export function crearRecorrido(video: AjustesVideo, tomas: Toma[]): ((u: number)
   const n = tomas.length - 1
   const vp = new Vector3()
   const vt = new Vector3()
+  const pose = (t: number): Pose => {
+    curvaP.getPoint(Math.min(1, Math.max(0, t)), vp)
+    curvaT.getPoint(Math.min(1, Math.max(0, t)), vt)
+    return { position: a3(vp), target: a3(vt) }
+  }
+
+  const pausa = video.pausa ?? 0
+  if (pausa > 0) {
+    // Se queda quieta `pausa` segundos en cada toma (también en la primera y la última)
+    // y entre una y otra arranca y frena suave
+    const movimiento = video.duracion - pausa * tomas.length
+    if (movimiento < n * 1)
+      return `Con ${tomas.length} pausas de ${pausa} s no queda tiempo para moverse: subí la duración o bajá la pausa.`
+    const p = pausa / video.duracion // fracción de cada pausa
+    const m = movimiento / video.duracion // fracción del movimiento total
+    return (u) => {
+      let x = Math.min(1, Math.max(0, u))
+      for (let i = 0; i < n; i++) {
+        if (x < p) return pose(i / n)
+        x -= p
+        const tramo = (pesos[i] / total) * m
+        if (x < tramo) return pose((i + suavizar(x / tramo, 0.5)) / n)
+        x -= tramo
+      }
+      return pose(1)
+    }
+  }
 
   return (u) => {
     const s = suavizar(Math.min(1, Math.max(0, u)), 0.12)
     let i = 0
     while (i < n - 1 && s > acum[i + 1]) i++
     const f = (s - acum[i]) / (acum[i + 1] - acum[i] || 1)
-    const t = Math.min(1, (i + Math.min(1, Math.max(0, f))) / n)
-    curvaP.getPoint(t, vp)
-    curvaT.getPoint(t, vt)
-    return { position: a3(vp), target: a3(vt) }
+    return pose(Math.min(1, (i + Math.min(1, Math.max(0, f))) / n))
   }
 }

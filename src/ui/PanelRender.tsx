@@ -5,6 +5,10 @@ import {
   CIELOS,
   FORMATOS,
   formatoHora,
+  formatoLatitud,
+  LATITUD,
+  LUGARES,
+  MESES,
   posicionSol,
   slugModelo,
   useEstado,
@@ -37,7 +41,7 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
   const [ultimo, setUltimo] = useState<{ url: string; nombre: string } | null>(null)
   const [error, setError] = useState('')
   const f = FORMATOS[e.formato]
-  const { elevacion } = posicionSol(e.hora, e.orientacion)
+  const { elevacion } = posicionSol(e.hora, e.orientacion, e.mes, e.latitud)
   const video = e.salida === 'video'
 
   // El video se graba con el motor de tiempo real (path tracing cuadro por cuadro tardaría horas)
@@ -177,6 +181,45 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
               onChange={(ev) => e.set({ hora: +ev.target.value })}
             />
           </label>
+          <label className="deslizador">
+            <span className="deslizador__fila">
+              <h3>Mes</h3>
+              <output>{MESES[e.mes - 1]}</output>
+            </span>
+            <input
+              type="range"
+              min={1}
+              max={12}
+              step={1}
+              value={e.mes}
+              onChange={(ev) => e.set({ mes: +ev.target.value })}
+            />
+          </label>
+          <label className="deslizador">
+            <span className="deslizador__fila">
+              <h3>Latitud</h3>
+              <output>{formatoLatitud(e.latitud)}</output>
+            </span>
+            <input
+              type="range"
+              min={LATITUD.min}
+              max={LATITUD.max}
+              step={0.1}
+              value={e.latitud}
+              onChange={(ev) => e.set({ latitud: +ev.target.value })}
+            />
+          </label>
+          <div className="chips">
+            {LUGARES.map((l) => (
+              <button
+                key={l.nombre}
+                className={'chip chip--chico' + (Math.abs(e.latitud - l.latitud) < 0.26 ? ' chip--activo' : '')}
+                onClick={() => e.set({ latitud: l.latitud })}
+              >
+                {l.nombre}
+              </button>
+            ))}
+          </div>
           <label className="deslizador">
             <span className="deslizador__fila">
               <h3>Orientación del norte</h3>

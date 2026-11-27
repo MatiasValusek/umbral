@@ -116,18 +116,24 @@ export type AjustesVideo = {
   giro: 90 | 180 | 360
   duracion: number // segundos
   fps: Fps
+  pausa: Pausa // segundos quieta en cada toma (solo recorrido por tomas)
 }
-export const VIDEO_INICIAL: AjustesVideo = { tipo: 'tomas', tomas: [], orbita: null, giro: 360, duracion: 20, fps: 30 }
+export type Pausa = 0 | 1 | 2 | 3
+export const VIDEO_INICIAL: AjustesVideo = { tipo: 'tomas', tomas: [], orbita: null, giro: 360, duracion: 20, fps: 30, pausa: 0 }
 export const DURACION_VIDEO = { min: 4, max: 60 }
 export type Salida = 'imagen' | 'video'
 /** Graba el recorrido cuadro por cuadro; devuelve el MP4 (null si se canceló) */
 export type Grabador = (ancho: number, alto: number) => Promise<Blob | null>
 export type ProgresoVideo = { cuadro: number; total: number; inicio: number }
 
+export const LATITUD_INICIAL = -34.6 // Buenos Aires
+
 type Estado = {
   modo: Modo
   cielo: CieloId
   hora: number // 6 a 20.5, hora local
+  mes: number // 1 a 12 (el sol se calcula para el día 15)
+  latitud: number // grados, negativa al sur
   orientacion: number // grados: hacia dónde queda el norte (0 = fondo del lote)
   exposicion: number
   sombrasSuaves: boolean
@@ -182,6 +188,8 @@ export const useEstado = create<Estado>()(
   modo: 'vista',
   cielo: 'despejado',
   hora: 15,
+  mes: 11,
+  latitud: LATITUD_INICIAL,
   orientacion: 0,
   exposicion: 1,
   sombrasSuaves: true,
@@ -251,12 +259,19 @@ export const useEstado = create<Estado>()(
     // Los .glb propios no se guardan (viven en memoria hasta recargar).
     name: 'umbral-escena',
     version: 1,
+    // Lo guardado por versiones anteriores puede no traer ajustes nuevos del video (pausa)
+    merge: (guardado, actual) => {
+      const g = (guardado ?? {}) as Partial<Estado>
+      return { ...actual, ...g, video: { ...VIDEO_INICIAL, ...g.video } }
+    },
     partialize: (s) => ({
       modelo: s.modelo,
       objetos: s.objetos.filter((o) => o.tipo !== 'propio'),
       materiales: s.materiales,
       cielo: s.cielo,
       hora: s.hora,
+      mes: s.mes,
+      latitud: s.latitud,
       orientacion: s.orientacion,
       exposicion: s.exposicion,
       sombrasSuaves: s.sombrasSuaves,
@@ -273,15 +288,38 @@ export const useEstado = create<Estado>()(
   ),
 )
 
-// Posición del sol para Buenos Aires (lat −34,6°) a fines de noviembre (declinación ≈ −21°).
-// Devuelve la dirección hacia el sol en coordenadas de la escena (norte = −Z rotado por `orientacion`)
-// y la elevación en grados.
-const LAT = (-34.6 * Math.PI) / 180
-const DEC = (-21 * Math.PI) / 180
-const MEDIODIA_SOLAR = 12.7 // huso UTC−3, longitud −58,4° y ecuación del tiempo de noviembre
+// ---------- Sol ----------
+export const LATITUD = { min: -55, max: 60 }
+export const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+/** Lugares de referencia para la latitud */
+export const LUGARES: { nombre: string; latitud: number }[] = [
+  { nombre: 'Salta', latitud: -24.8 },
+  { nombre: 'Córdoba', latitud: -31.4 },
+  { nombre: 'Buenos Aires', latitud: -34.6 },
+  { nombre: 'Bariloche', latitud: -41.1 },
+  { nombre: 'Ushuaia', latitud: -54.8 },
+]
+export const formatoLatitud = (lat: number) => {
+  const l = LUGARES.find((x) => Math.abs(x.latitud - lat) < 0.26)
+  const g = `${Math.abs(lat).toFixed(1).replace('.', ',')}° ${lat < 0 ? 'S' : lat > 0 ? 'N' : ''}`.trim()
+  return l ? `${l.nombre} · ${g}` : g
+}
 
-export function posicionSol(hora: number, orientacion: number) {
-  const H = ((hora - MEDIODIA_SOLAR) * 15 * Math.PI) / 180
+/**
+ * Posición del sol el día 15 del mes elegido, a la latitud elegida.
+ * La hora es la oficial argentina (UTC−3, meridiano −45°) a la longitud de Buenos Aires (−58,4°),
+ * corregida por la ecuación del tiempo de ese mes.
+ * Devuelve la dirección hacia el sol en coordenadas de la escena (norte = −Z rotado por `orientacion`)
+ * y la elevación en grados.
+ */
+export function posicionSol(hora: number, orientacion: number, mes = 11, latitud = LATITUD_INICIAL) {
+  const n = Math.round(30.44 * (mes - 1) + 15) // día del año
+  const DEC = ((23.44 * Math.PI) / 180) * Math.sin((2 * Math.PI * (284 + n)) / 365)
+  const B = (2 * Math.PI * (n - 81)) / 364
+  const ecuacionTiempo = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B) // minutos
+  const mediodiaSolar = 12 + (58.4 - 45) / 15 - ecuacionTiempo / 60
+  const LAT = (latitud * Math.PI) / 180
+  const H = ((hora - mediodiaSolar) * 15 * Math.PI) / 180
   const este = -Math.cos(DEC) * Math.sin(H)
   const norte = Math.sin(DEC) * Math.cos(LAT) - Math.cos(DEC) * Math.sin(LAT) * Math.cos(H)
   const arriba = Math.sin(LAT) * Math.sin(DEC) + Math.cos(LAT) * Math.cos(DEC) * Math.cos(H)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Punto } from '../data/puntos'
-import { DURACION_VIDEO, FORMATOS, slugModelo, useEstado, type AjustesVideo, type Fps, type Toma } from '../estado'
+import { DURACION_VIDEO, FORMATOS, slugModelo, useEstado, type AjustesVideo, type Fps, type Pausa, type Toma } from '../estado'
 import { crearRecorrido, orbitaDesde, tomasDelRecorrido } from '../video/recorrido'
 import { descargar, fechaArchivo } from './descargar'
 
@@ -9,6 +9,52 @@ const GIROS: { valor: AjustesVideo['giro']; nombre: string }[] = [
   { valor: 180, nombre: 'Media vuelta' },
   { valor: 360, nombre: 'Vuelta completa' },
 ]
+
+const PAUSAS: { valor: Pausa; nombre: string }[] = [
+  { valor: 0, nombre: 'Sin pausa' },
+  { valor: 1, nombre: '1 s' },
+  { valor: 2, nombre: '2 s' },
+  { valor: 3, nombre: '3 s' },
+]
+
+/** Nombre de una toma: click para verla, lápiz para cambiarle el nombre */
+function NombreToma({ toma, onIr, onRenombrar }: { toma: Toma; onIr: () => void; onRenombrar: (n: string) => void }) {
+  const [editando, setEditando] = useState(false)
+  const [texto, setTexto] = useState(toma.nombre)
+  const terminar = (guardar: boolean) => {
+    const limpio = texto.trim().slice(0, 60)
+    if (guardar && limpio && limpio !== toma.nombre) onRenombrar(limpio)
+    setEditando(false)
+  }
+  if (editando)
+    return (
+      <input
+        className="toma__editar"
+        value={texto}
+        maxLength={60}
+        autoFocus
+        aria-label="Nombre de la toma"
+        onFocus={(ev) => ev.target.select()}
+        onChange={(ev) => setTexto(ev.target.value)}
+        onBlur={() => terminar(true)}
+        onKeyDown={(ev) => {
+          if (ev.key === 'Enter') terminar(true)
+          if (ev.key === 'Escape') terminar(false)
+          ev.stopPropagation() // que las teclas no muevan la cámara ni disparen atajos
+        }}
+      />
+    )
+  return (
+    <>
+      <button className="toma__nombre" onClick={onIr} onDoubleClick={() => { setTexto(toma.nombre); setEditando(true) }} title="Ver esta toma (doble click para cambiarle el nombre)">
+        {toma.nombre}
+      </button>
+      <button className="toma__accion" onClick={() => { setTexto(toma.nombre); setEditando(true) }} aria-label={`Cambiar el nombre de ${toma.nombre}`} title="Cambiar el nombre">
+        ✎
+      </button>
+    </>
+  )
+}
 
 const segundos = (s: number) => (s < 60 ? `${Math.round(s)} s` : `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`)
 
@@ -38,6 +84,7 @@ export function Recorrido({ onSelect }: { onSelect: (p: Punto) => void }) {
     const n = tomas.length + 1
     fijarTomas([...tomas, { ...vistaActual(), nombre: `Toma ${n}` }])
   }
+  const renombrar = (i: number, nombre: string) => fijarTomas(tomas.map((t, k) => (k === i ? { ...t, nombre } : t)))
   const quitar = (i: number) => fijarTomas(tomas.filter((_, k) => k !== i))
   const subir = (i: number) => {
     if (i === 0) return
@@ -69,11 +116,9 @@ export function Recorrido({ onSelect }: { onSelect: (p: Punto) => void }) {
           {tomas.length > 0 && (
             <ol className="tomas">
               {tomas.map((t, i) => (
-                <li key={i} className="toma">
+                <li key={`${i}-${t.nombre}`} className="toma">
                   <span className="toma__n">{i + 1}</span>
-                  <button className="toma__nombre" onClick={() => ir(t)} title="Ver esta toma">
-                    {t.nombre}
-                  </button>
+                  <NombreToma toma={t} onIr={() => ir(t)} onRenombrar={(n) => renombrar(i, n)} />
                   <button className="toma__accion" onClick={() => subir(i)} disabled={i === 0} aria-label={`Subir ${t.nombre}`}>
                     ↑
                   </button>
@@ -94,10 +139,29 @@ export function Recorrido({ onSelect }: { onSelect: (p: Punto) => void }) {
               </button>
             )}
           </div>
+          <div className="deslizador">
+            <span className="deslizador__fila">
+              <h3>Pausa en cada toma</h3>
+            </span>
+            <div className="chips">
+              {PAUSAS.map((p) => (
+                <button
+                  key={p.valor}
+                  className={'chip' + ((video.pausa ?? 0) === p.valor ? ' chip--activo' : '')}
+                  onClick={() => cambiar({ pausa: p.valor })}
+                >
+                  {p.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="render__nota">
             {sugerido
               ? 'Recorrido sugerido por los puntos de interés. Mové la cámara y agregá tomas para armar el tuyo.'
-              : 'La cámara pasa por las tomas en orden, con un movimiento suave. Click en una toma para verla.'}
+              : 'La cámara pasa por las tomas en orden, con un movimiento suave. Click en una toma para verla, ✎ para cambiarle el nombre.'}
+            {(video.pausa ?? 0) > 0 &&
+              tomas.length > 1 &&
+              ` Con la pausa quedan ${Math.max(0, video.duracion - (video.pausa ?? 0) * tomas.length)} s de movimiento.`}
           </p>
         </>
       ) : (

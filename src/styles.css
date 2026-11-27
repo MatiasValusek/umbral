@@ -461,6 +461,69 @@ canvas { touch-action: none; }
   border-radius: 8px;
 }
 
+/* ---------- Video de recorrido ---------- */
+.pestanas--salida { margin-bottom: -4px; }
+.pestana:disabled, .chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.chip:disabled:hover { border-color: rgba(31, 36, 32, 0.14); }
+.chip--previa { align-self: flex-start; }
+.tomas { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.toma {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(31, 36, 32, 0.1);
+  border-radius: 9px;
+  padding: 4px 4px 4px 8px;
+  background: rgba(255, 255, 255, 0.45);
+}
+.toma__n {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 11px var(--sans);
+  color: #fff;
+  background: var(--acento);
+}
+.toma__nombre {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font: 500 13px var(--sans);
+  color: var(--tinta);
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toma__nombre:hover { color: var(--acento); }
+.toma__accion {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--tinta-suave);
+  font: 500 15px var(--sans);
+  cursor: pointer;
+}
+.toma__accion:hover:not(:disabled) { background: rgba(31, 36, 32, 0.07); color: var(--tinta); }
+.toma__accion:disabled { opacity: 0.3; cursor: default; }
+.toma__nombre:focus-visible, .toma__accion:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.render__ultimo video {
+  width: 100%;
+  max-height: 180px;
+  background: rgba(31, 36, 32, 0.06);
+  border-radius: 8px;
+}
+.render__ultimo a { color: var(--acento); text-decoration: none; }
+
 /* Marco del formato: oscurece lo que queda afuera de la imagen */
 .marco {
   position: fixed;

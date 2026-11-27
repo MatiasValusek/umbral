@@ -101,6 +101,29 @@ export type EsperarMuestras = (n: number, progreso: (m: number) => void) => Prom
 
 export type Capturador = (ancho: number, alto: number, archivo: Archivo) => Promise<Blob | null>
 
+// ---------- Video de recorrido ----------
+export type Vec3 = [number, number, number]
+/** Una toma del recorrido: dónde está la cámara y hacia dónde mira */
+export type Toma = { nombre: string; position: Vec3; target: Vec3 }
+/** Órbita alrededor de un punto: arranca desde una vista guardada */
+export type Orbita = { centro: Vec3; radio: number; altura: number; angulo: number }
+export type TipoRecorrido = 'tomas' | 'orbita'
+export type Fps = 24 | 30 | 60
+export type AjustesVideo = {
+  tipo: TipoRecorrido
+  tomas: Toma[] // vacío = recorrido sugerido (puntos de interés del modelo de ejemplo)
+  orbita: Orbita | null
+  giro: 90 | 180 | 360
+  duracion: number // segundos
+  fps: Fps
+}
+export const VIDEO_INICIAL: AjustesVideo = { tipo: 'tomas', tomas: [], orbita: null, giro: 360, duracion: 20, fps: 30 }
+export const DURACION_VIDEO = { min: 4, max: 60 }
+export type Salida = 'imagen' | 'video'
+/** Graba el recorrido cuadro por cuadro; devuelve el MP4 (null si se canceló) */
+export type Grabador = (ancho: number, alto: number) => Promise<Blob | null>
+export type ProgresoVideo = { cuadro: number; total: number; inicio: number }
+
 type Estado = {
   modo: Modo
   cielo: CieloId
@@ -121,6 +144,14 @@ type Estado = {
   esperarMuestras: EsperarMuestras | null
   terminarYa: boolean
   muestrasRender: number // progreso del render en curso (modo Foto)
+  // Video
+  salida: Salida
+  video: AjustesVideo
+  grabar: Grabador | null
+  grabando: ProgresoVideo | null
+  cancelarVideo: boolean
+  previa: boolean // vista previa del recorrido en el visor
+  vistaActual: (() => Toma) | null
   // Modelo
   modelo: ModeloInfo
   modeloUrl: string | null // blob del modelo propio (no se guarda: se lee de IndexedDB al iniciar)
@@ -167,6 +198,13 @@ export const useEstado = create<Estado>()(
   esperarMuestras: null,
   terminarYa: false,
   muestrasRender: 0,
+  salida: 'imagen',
+  video: VIDEO_INICIAL,
+  grabar: null,
+  grabando: null,
+  cancelarVideo: false,
+  previa: false,
+  vistaActual: null,
   modelo: { tipo: 'ejemplo' },
   modeloUrl: null,
   encuadre: null,
@@ -228,6 +266,8 @@ export const useEstado = create<Estado>()(
       formato: s.formato,
       archivo: s.archivo,
       calidadFoto: s.calidadFoto,
+      salida: s.salida,
+      video: s.video,
     }),
   },
   ),

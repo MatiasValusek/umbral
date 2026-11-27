@@ -14,24 +14,10 @@ import {
   type FormatoId,
 } from '../estado'
 
+import { descargar, fechaArchivo } from './descargar'
+import { CuadrosPorSegundo, GrabarVideo, Recorrido } from './PanelVideo'
+
 type Props = { puntos: Punto[]; activo: string; onSelect: (p: Punto) => void }
-
-const fechaArchivo = () => {
-  const d = new Date()
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
-}
-
-function descargar(blob: Blob, nombre: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nombre
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 2000)
-}
 
 // Marco del formato elegido sobre el visor: lo que queda adentro es lo que sale en la imagen
 function Marco({ aspecto }: { aspecto: number }) {
@@ -52,6 +38,11 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
   const [error, setError] = useState('')
   const f = FORMATOS[e.formato]
   const { elevacion } = posicionSol(e.hora, e.orientacion)
+  const video = e.salida === 'video'
+
+  // El video se graba con el motor de tiempo real (path tracing cuadro por cuadro tardaría horas)
+  const elegirSalida = (salida: 'imagen' | 'video') =>
+    e.set(salida === 'video' ? { salida, motor: 'tiempoReal' } : { salida, previa: false })
 
   const renderizar = async () => {
     if (!e.capturar || e.renderizando) return
@@ -80,6 +71,30 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
       <aside className="render" aria-label="Opciones de render">
         <h2 className="render__titulo">Render</h2>
 
+        <div className="pestanas pestanas--salida" role="tablist" aria-label="Qué querés generar">
+          {(
+            [
+              ['imagen', 'Imagen'],
+              ['video', 'Video'],
+            ] as const
+          ).map(([id, nombre]) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={e.salida === id}
+              className={'pestana' + (e.salida === id ? ' pestana--activa' : '')}
+              onClick={() => elegirSalida(id)}
+              disabled={e.renderizando || !!e.grabando}
+            >
+              {nombre}
+            </button>
+          ))}
+        </div>
+
+        {video ? (
+          <Recorrido onSelect={onSelect} />
+        ) : (
+        <>
         <section className="render__grupo">
           <h3>Motor</h3>
           <div className="pestanas" role="tablist" aria-label="Motor de render">
@@ -126,6 +141,8 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
           </div>
           <p className="render__nota">O mové la cámara libremente en el visor.</p>
         </section>
+        </>
+        )}
 
         <section className="render__grupo">
           <h3>Cielo</h3>
@@ -243,6 +260,9 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
               </button>
             ))}
           </div>
+          {video ? (
+            <CuadrosPorSegundo />
+          ) : (
           <div className="chips chips--archivo">
             {(['png', 'jpg'] as Archivo[]).map((a) => (
               <button
@@ -254,8 +274,13 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
               </button>
             ))}
           </div>
+          )}
         </section>
 
+        {video ? (
+          <GrabarVideo />
+        ) : (
+        <>
         <button
           className="renderizar"
           onClick={renderizar}
@@ -269,6 +294,8 @@ export default function PanelRender({ puntos, activo, onSelect }: Props) {
             <img src={ultimo.url} alt="Último render" />
             <span>Último render · descargar de nuevo</span>
           </a>
+        )}
+        </>
         )}
       </aside>
 

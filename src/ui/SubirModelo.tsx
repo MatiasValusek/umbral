@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { UNIDADES, useEstado, type Unidad } from '../estado'
+import { UNIDADES, useEstado, VIDEO_INICIAL, type Unidad } from '../estado'
 import { borrarModelo, guardarModelo } from '../modelo/almacen'
 import type { Informe, Paso } from '../modelo/optimizar'
 import { limpiarHistorial } from '../proyecto/documento'
@@ -19,7 +19,7 @@ export const elegirModelo = () => abrirSelector()
 export async function volverAlEjemplo() {
   const s = useEstado.getState()
   if (s.modeloUrl) URL.revokeObjectURL(s.modeloUrl)
-  s.set({ modelo: { tipo: 'ejemplo' }, modeloUrl: null, objetos: [], materiales: {}, seleccionado: null, materialSel: null })
+  s.set({ modelo: { tipo: 'ejemplo' }, modeloUrl: null, objetos: [], materiales: {}, video: VIDEO_INICIAL, seleccionado: null, materialSel: null })
   limpiarHistorial()
   await borrarModelo().catch(() => {})
 }
@@ -126,6 +126,7 @@ export default function SubirModelo() {
       modeloUrl: url,
       objetos: [],
       materiales: {},
+      video: VIDEO_INICIAL,
       seleccionado: null,
       materialSel: null,
       colocando: null,

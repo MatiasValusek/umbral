@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { CameraControls } from '@react-three/drei'
 import Experience from './scene/Experience'
 import Capturador from './scene/Capturador'
+import Grabador from './video/Grabador'
 import Overlay from './ui/Overlay'
 import PanelRender from './ui/PanelRender'
 import PanelEdicion from './ui/PanelEdicion'
@@ -11,7 +12,7 @@ import BarraProyecto from './ui/BarraProyecto'
 import { iniciarHistorial } from './proyecto/documento'
 import Loader from './ui/Loader'
 import { PUNTOS, VISTA_GENERAL, type Punto } from './data/puntos'
-import { tituloModelo, useEstado } from './estado'
+import { tituloModelo, useEstado, VIDEO_INICIAL } from './estado'
 import SubirModelo from './ui/SubirModelo'
 import { leerModelo } from './modelo/almacen'
 
@@ -41,7 +42,7 @@ export default function App() {
     leerModelo()
       .then((blob) => {
         if (blob) useEstado.getState().set({ modeloUrl: URL.createObjectURL(blob) })
-        else useEstado.getState().set({ modelo: { tipo: 'ejemplo' }, objetos: [], materiales: {} })
+        else useEstado.getState().set({ modelo: { tipo: 'ejemplo' }, objetos: [], materiales: {}, video: VIDEO_INICIAL })
       })
       .catch(() => useEstado.getState().set({ modelo: { tipo: 'ejemplo' } }))
   }, [])
@@ -103,6 +104,7 @@ export default function App() {
           </Suspense>
         )}
         <Capturador />
+        <Grabador />
         <CameraControls
           makeDefault
           ref={controls}

@@ -11,7 +11,7 @@ const CLAVE_PUBLICABLE = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_pu
 export const nubeDisponible = URL_SUPABASE.startsWith('https://') && !!CLAVE_PUBLICABLE
 
 export const supabase: SupabaseClient | null = nubeDisponible
-  ? createClient(URL_SUPABASE, CLAVE_PUBLICABLE, { auth: { flowType: 'pkce', detectSessionInUrl: true } })
+  ? createClient(URL_SUPABASE, CLAVE_PUBLICABLE, { auth: { flowType: 'implicit', detectSessionInUrl: true } // implicit: el link del mail funciona aunque se abra en otro navegador o en el celular })
   : null
 
 export const BUCKET = 'proyectos'

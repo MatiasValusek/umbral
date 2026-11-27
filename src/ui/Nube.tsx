@@ -90,7 +90,7 @@ function Entrar({ onAviso }: { onAviso: (t: string) => void }) {
       ) : (
         <form className="nube__form" onSubmit={verificar}>
           <p className="nube__texto">
-            Te mandamos un mail a <strong>{email.trim()}</strong>. Abrí el link desde esta misma compu y vas a entrar solo. Si no lo ves, fijate en spam.
+            Te mandamos un mail a <strong>{email.trim()}</strong>. Abrí el link y vas a entrar solo. Si no lo ves, fijate en spam.
           </p>
           <label className="nube__campo">
             <span>¿El mail trae un código? Escribilo acá</span>
